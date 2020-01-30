@@ -24,20 +24,14 @@ impl ZHL16 {
         self.p_t[tissue-1] = p_n + p_h;
     }
 
-    pub fn new(ascent_rate: isize, descent_rate: isize) -> ZHL16 {
+    pub fn new(ascent_rate: isize, descent_rate: isize, tissue_gas: &common::gas::Gas) -> ZHL16 {
         ZHL16 {
-            p_n2: [0.0; 16],
-            p_he: [0.0; 16],
-            p_t: [0.0; 16],
+            p_n2: [tissue_gas.fr_n2(); 16],
+            p_he: [tissue_gas.fr_he(); 16],
+            p_t: [tissue_gas.fr_n2() + tissue_gas.fr_he(); 16],
             diver_depth: 0,
             ascent_rate,
             descent_rate
-        }
-    }
-
-    pub fn initialise_tissues(&mut self, gas: &common::gas::Gas) {
-        for i in 1..17 {
-            self.set_tissue_pressure(i, gas.fr_n2(), gas.fr_he());
         }
     }
 

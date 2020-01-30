@@ -8,8 +8,7 @@ fn main() {
     let pure_o2 = common::gas::Gas::new(0.0, 1.0, 0.0).unwrap();
 
     let mut deco = zhl16::ZHL16::new(common::DEFAULT_ASCENT_RATE,
-                                     common::DEFAULT_DESCENT_RATE);
-    deco.initialise_tissues(&air);
+                                     common::DEFAULT_DESCENT_RATE, &air);
     let depth = 60;
     let time = 30;
 
