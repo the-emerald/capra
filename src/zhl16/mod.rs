@@ -46,9 +46,7 @@ impl ZHL16 {
             let pio: f32 = ((depth as f32 / 10.0) + 1.0) * gas.fr_n2();
             let r = (rate as f32 / 10.0) * gas.fr_n2();
             let k = LN_2 / util::ZHL16_N2_HALFLIFE[x];
-
             //println!("N2 tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
-
             let pn: f32 = pio + r * (t-(1.0/k)) - (pio - po - (r/k)) * E.powf(-1.0*k*t);
             self.p_n2[x] = pn;
             self.p_t[x] = pn;
@@ -59,9 +57,7 @@ impl ZHL16 {
             let pio: f32 = ((depth as f32 / 10.0) + 1.0) * gas.fr_he();
             let r = (rate as f32 / 10.0) * gas.fr_he();
             let k = LN_2 / util::ZHL16_HE_HALFLIFE[x];
-
             //println!("He tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
-
             let ph: f32 = pio + r * (t-(1.0/k)) - (pio - po - (r/k)) * E.powf(-1.0*k*t);
             self.p_he[x] = ph;
             self.p_t[x] += ph;
@@ -72,8 +68,9 @@ impl ZHL16 {
         for x in 0..16 {
             let po = self.p_n2[x];
             let pi = ((depth as f32 / 10.0) + 1.0) * gas.fr_n2();
+            //println!("N2 tissue {}:: po: {}, pi: {}", x+1, po, pi);
             let p = po + (pi - po) *
-                (1.0 - (2.0_f32.powf(-1.0*time as f32) / util::ZHL16_N2_HALFLIFE[x]));
+                (1.0 - (2.0_f32.powf(-1.0*time as f32 / util::ZHL16_N2_HALFLIFE[x])));
             self.p_n2[x] = p;
             self.p_t[x] = p;
         }
@@ -81,7 +78,7 @@ impl ZHL16 {
             let po = self.p_he[x];
             let pi = ((depth as f32 / 10.0) + 1.0) * gas.fr_he();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f32.powf(-1.0*time as f32) / util::ZHL16_HE_HALFLIFE[x]));
+                (1.0 - (2.0_f32.powf(-1.0*time as f32 / util::ZHL16_HE_HALFLIFE[x])));
             self.p_he[x] = p;
             self.p_t[x] += p;
         }
@@ -91,7 +88,11 @@ impl ZHL16 {
 impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
     fn add_bottom_time(&mut self, depth: usize, time: usize, gas: &common::gas::Gas) {
         self.add_depth_change(depth, common::DESCENT_RATE, gas);
+        println!("Descend to {}m with {:?}:: {:?}\n", depth, gas, self);
+
         self.add_bottom(depth, time, gas);
+        println!("Bottom time of {}m for {}min with {:?}:: {:?}\n", depth, time, gas, self);
+
     }
 
     fn get_stops() -> Vec<common::deco_stop::DecoStop> {

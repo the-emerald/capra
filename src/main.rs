@@ -13,12 +13,8 @@ fn main() {
     let mut deco = zhl16::ZHL16::new();
     deco.initialise_tissues(&air);
     let depth = 25;
-    let time = 10;
+    let time = 20;
 
     println!("At surface: {:?}\n", deco);
     deco.add_bottom_time(depth, time, &air);
-    println!("Descend to {}m for {}min with {:?}:: {:?}\n", depth, time, air, deco);
-
-    deco.add_bottom_time(depth+20, time+5, &air);
-    println!("Descend to {}m for {}min with {:?}:: {:?}\n", depth+20, time+5, air, deco);
 }
