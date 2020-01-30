@@ -1,6 +1,8 @@
 use crate::common;
 use std::f32::consts::{LN_2, E};
 use crate::common::deco_stop::DecoStop;
+use crate::common::deco_stop::StopType;
+use crate::common::deco_stop::StopType::Stop;
 
 mod util;
 
@@ -36,8 +38,9 @@ impl ZHL16 {
     }
 
     pub(crate) fn add_depth_change(&mut self, depth: usize, rate: isize, gas: &common::gas::Gas) {
-        // Only supports change of depth downwards
-        let t: f32 = depth as f32 / rate as f32;
+        let delta_depth = (depth as isize) - (self.diver_depth as isize);
+        //let rate = common::mtr_bar(rate as f32);
+        let t: f32 = delta_depth as f32 / rate as f32;
         for x in 0..16 {
             // Po = Pn [this is the current loading at the start]
             // Pio = (Depth - WATERVAPOUR) * fN2
@@ -46,7 +49,7 @@ impl ZHL16 {
             // Pn = Pio + R*(t - (1/k)) - (Pio - Po - (R / k))* exp(-k*t)
 
             let po = self.p_n2[x];
-            let pio: f32 = ((depth as f32 / 10.0) + 1.0) * gas.fr_n2();
+            let pio: f32 = common::mtr_bar(depth as f32) * gas.fr_n2();
             let r = (rate as f32 / 10.0) * gas.fr_n2();
             let k = LN_2 / util::ZHL16_N2_HALFLIFE[x];
             //println!("N2 tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
@@ -54,10 +57,9 @@ impl ZHL16 {
             self.p_n2[x] = pn;
             self.p_t[x] = pn;
         }
-
         for x in 0..16 {
             let po = self.p_he[x];
-            let pio: f32 = ((depth as f32 / 10.0) + 1.0) * gas.fr_he();
+            let pio: f32 = common::mtr_bar(depth as f32) * gas.fr_he();
             let r = (rate as f32 / 10.0) * gas.fr_he();
             let k = LN_2 / util::ZHL16_HE_HALFLIFE[x];
             //println!("He tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
@@ -99,12 +101,10 @@ impl ZHL16 {
                 (self.p_n2[x] + self.p_he[x]);
             ceilings[x] = ((self.p_n2[x] + self.p_he[x]) - a) * b;
         }
-        //println!("Ascent ceiling: {:?}", ceilings);
         ceilings.iter().cloned().fold(0./0., f32::max)
     }
 
     pub(crate) fn next_stop(&self, gas: &common::gas::Gas) -> DecoStop {
-        //unimplemented!();
         let stop_depth = (3.0*(
             (common::bar_mtr(self.find_ascent_ceiling())/3.0)
                 .ceil())) as usize;
@@ -118,7 +118,7 @@ impl ZHL16 {
                 - 0.3;
             stop_time += 1;
         }
-        DecoStop::new(stop_depth ,stop_time)
+        DecoStop::new(StopType::Stop, stop_depth, stop_time)
     }
 
     pub(crate) fn ndl(&self, gas: &common::gas::Gas) -> Option<usize> {
@@ -154,14 +154,7 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
         if virtual_zhl16.find_ascent_ceiling() < 1.0 {
             let _ndl = match virtual_zhl16.ndl(gas) {
                 Some(t) => {
-                    if t == std::usize::MAX {
-                        println!("NDL: >999 minutes")
-
-                    }
-                    else {
-                        println!("NDL: {} minutes", t)
-                    }
-                    t
+                    stops.push(DecoStop::new(StopType::NoDeco, 0, t))
                 },
                 None =>  {
                     panic!("Ascent ceiling is < 1.0 but NDL was found.")

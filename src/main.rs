@@ -9,8 +9,8 @@ fn main() {
 
     let mut deco = zhl16::ZHL16::new();
     deco.initialise_tissues(&air);
-    let depth = 30;
-    let time = 60;
+    let depth = 60;
+    let time = 30;
 
     println!("At surface: {:?}\n", deco);
     deco.add_bottom_time(depth, time, &air);
@@ -19,6 +19,6 @@ fn main() {
     let deco2 = deco.clone();
 
     println!("Decompression stops using {:?}: {:?}", air, deco.get_stops(&air));
-    println!("Decompression stops using {:?}: {:?}", pure_o2, deco2.get_stops(&pure_o2));
+    //println!("Decompression stops using {:?}: {:?}", pure_o2, deco2.get_stops(&pure_o2));
 
 }
