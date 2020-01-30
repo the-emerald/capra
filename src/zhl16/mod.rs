@@ -1,13 +1,15 @@
 use crate::common;
 use std::f32::consts::{LN_2, E};
+use crate::common::deco_stop::DecoStop;
 
 mod util;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct ZHL16 {
     p_n2: [f32; 16],
     p_he: [f32; 16],
-    p_t: [f32; 16]
+    p_t: [f32; 16],
+    diver_depth: usize
 }
 
 impl ZHL16 {
@@ -22,7 +24,8 @@ impl ZHL16 {
         ZHL16 {
             p_n2: [0.0; 16],
             p_he: [0.0; 16],
-            p_t: [0.0; 16]
+            p_t: [0.0; 16],
+            diver_depth: 0
         }
     }
 
@@ -62,6 +65,7 @@ impl ZHL16 {
             self.p_he[x] = ph;
             self.p_t[x] += ph;
         }
+        self.diver_depth = depth;
     }
 
     pub(crate) fn add_bottom(&mut self, depth: usize, time: usize, gas: &common::gas::Gas) {
@@ -82,20 +86,98 @@ impl ZHL16 {
             self.p_he[x] = p;
             self.p_t[x] += p;
         }
+        self.diver_depth = depth;
+    }
+
+    pub(crate) fn find_ascent_ceiling(&self) -> f32 {
+        let mut ceilings: [f32; 16] = [0.0; 16];
+        for x in 0..16 {
+            let a = (util::ZHL16_N2_A[x] * self.p_n2[x] + util::ZHL16_HE_A[x] * self.p_he[x]) /
+                (self.p_n2[x] + self.p_he[x]);
+
+            let b = (util::ZHL16_N2_B[x] * self.p_n2[x] + util::ZHL16_HE_B[x] * self.p_he[x]) /
+                (self.p_n2[x] + self.p_he[x]);
+            ceilings[x] = ((self.p_n2[x] + self.p_he[x]) - a) * b;
+        }
+        //println!("Ascent ceiling: {:?}", ceilings);
+        ceilings.iter().cloned().fold(0./0., f32::max)
+    }
+
+    pub(crate) fn next_stop(&self, gas: &common::gas::Gas) -> DecoStop {
+        //unimplemented!();
+        let stop_depth = (3.0*(
+            (common::bar_mtr(self.find_ascent_ceiling())/3.0)
+                .ceil())) as usize;
+        let mut stop_time: usize = 0;
+        let mut in_limit: bool = false;
+        while !in_limit {
+            let mut virtual_zhl16 = self.clone();
+            virtual_zhl16.add_depth_change(stop_depth, common::ASCENT_RATE, gas);
+            virtual_zhl16.add_bottom(stop_depth, stop_time, gas);
+            in_limit = virtual_zhl16.find_ascent_ceiling() < common::mtr_bar(stop_depth as f32)
+                - 0.3;
+            stop_time += 1;
+        }
+        DecoStop::new(stop_depth ,stop_time)
+    }
+
+    pub(crate) fn ndl(&self, gas: &common::gas::Gas) -> Option<usize> {
+        let mut ndl:usize = 0;
+        let mut in_ndl:bool = true;
+        while in_ndl {
+            let mut virtual_zhl16 = self.clone();
+            virtual_zhl16.add_bottom(virtual_zhl16.diver_depth, ndl, gas);
+            in_ndl = virtual_zhl16.find_ascent_ceiling() < 1.0;
+            ndl += 1;
+            if ndl > 999 {
+                return Some(std::usize::MAX)
+            }
+        }
+
+        Some(ndl)
     }
 }
 
 impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
     fn add_bottom_time(&mut self, depth: usize, time: usize, gas: &common::gas::Gas) {
         self.add_depth_change(depth, common::DESCENT_RATE, gas);
-        println!("Descend to {}m with {:?}:: {:?}\n", depth, gas, self);
+        //println!("Descend to {}m with {:?}:: {:?}\n", depth, gas, self);
 
         self.add_bottom(depth, time, gas);
-        println!("Bottom time of {}m for {}min with {:?}:: {:?}\n", depth, time, gas, self);
-
+        //println!("Bottom time of {}m for {}min with {:?}:: {:?}\n", depth, time, gas, self);
     }
 
-    fn get_stops() -> Vec<common::deco_stop::DecoStop> {
-        unimplemented!()
+    fn get_stops(&self, gas: &common::gas::Gas) -> Vec<common::deco_stop::DecoStop> {
+        let mut stops: Vec<common::deco_stop::DecoStop> = Vec::new();
+        let mut virtual_zhl16 = self.clone();
+
+        if virtual_zhl16.find_ascent_ceiling() < 1.0 {
+            let _ndl = match virtual_zhl16.ndl(gas) {
+                Some(t) => {
+                    if t == std::usize::MAX {
+                        println!("NDL: >999 minutes")
+
+                    }
+                    else {
+                        println!("NDL: {} minutes", t)
+                    }
+                    t
+                },
+                None =>  {
+                    panic!("Ascent ceiling is < 1.0 but NDL was found.")
+                }
+            };
+        }
+
+        while virtual_zhl16.find_ascent_ceiling() > 1.0 {
+            let stop = virtual_zhl16.next_stop(gas);
+            // Do the deco stop
+            virtual_zhl16.add_depth_change(stop.get_depth() as usize,
+                                           common::ASCENT_RATE, gas);
+            virtual_zhl16.add_bottom_time(stop.get_depth() as usize, stop.get_time(),
+                                          gas);
+            stops.push(stop);
+        }
+        stops
     }
 }

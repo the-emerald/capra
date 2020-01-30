@@ -1,13 +1,22 @@
+#[derive(Debug)]
 pub struct DecoStop {
-    depth: i32,
+    depth: usize,
     time: usize
 }
 
 impl DecoStop {
-    pub fn new(depth: i32, time: usize) -> Self {
+    pub fn new(depth: usize, time: usize) -> Self {
         Self {
             depth,
             time
         }
+    }
+
+    pub fn get_depth(&self) -> usize {
+        self.depth
+    }
+
+    pub fn get_time(&self) -> usize {
+        self.time
     }
 }
