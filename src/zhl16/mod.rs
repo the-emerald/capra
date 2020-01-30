@@ -11,7 +11,9 @@ pub struct ZHL16 {
     p_n2: [f32; 16],
     p_he: [f32; 16],
     p_t: [f32; 16],
-    diver_depth: usize
+    diver_depth: usize,
+    ascent_rate: isize,
+    descent_rate: isize,
 }
 
 impl ZHL16 {
@@ -22,12 +24,14 @@ impl ZHL16 {
         self.p_t[tissue-1] = p_n + p_h;
     }
 
-    pub fn new() -> ZHL16 {
+    pub fn new(ascent_rate: isize, descent_rate: isize) -> ZHL16 {
         ZHL16 {
             p_n2: [0.0; 16],
             p_he: [0.0; 16],
             p_t: [0.0; 16],
-            diver_depth: 0
+            diver_depth: 0,
+            ascent_rate,
+            descent_rate
         }
     }
 
@@ -112,7 +116,7 @@ impl ZHL16 {
         let mut in_limit: bool = false;
         while !in_limit {
             let mut virtual_zhl16 = self.clone();
-            virtual_zhl16.add_depth_change(stop_depth, common::ASCENT_RATE, gas);
+            virtual_zhl16.add_depth_change(stop_depth, common::DEFAULT_ASCENT_RATE, gas);
             virtual_zhl16.add_bottom(stop_depth, stop_time, gas);
             in_limit = virtual_zhl16.find_ascent_ceiling() < common::mtr_bar(stop_depth as f32)
                 - 0.3;
@@ -140,7 +144,7 @@ impl ZHL16 {
 
 impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
     fn add_bottom_time(&mut self, depth: usize, time: usize, gas: &common::gas::Gas) {
-        self.add_depth_change(depth, common::DESCENT_RATE, gas);
+        self.add_depth_change(depth, self.descent_rate, gas);
         //println!("Descend to {}m with {:?}:: {:?}\n", depth, gas, self);
 
         self.add_bottom(depth, time, gas);
@@ -166,7 +170,7 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
             let stop = virtual_zhl16.next_stop(gas);
             // Do the deco stop
             virtual_zhl16.add_depth_change(stop.get_depth() as usize,
-                                           common::ASCENT_RATE, gas);
+                                           self.ascent_rate, gas);
             virtual_zhl16.add_bottom_time(stop.get_depth() as usize, stop.get_time(),
                                           gas);
             stops.push(stop);

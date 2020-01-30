@@ -1,5 +1,5 @@
-pub const DESCENT_RATE: isize = 30;
-pub const ASCENT_RATE: isize = -18;
+pub const DEFAULT_DESCENT_RATE: isize = 30;
+pub const DEFAULT_ASCENT_RATE: isize = -18;
 
 pub mod deco_algorithm;
 pub mod gas;
