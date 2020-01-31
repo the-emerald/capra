@@ -1,7 +1,7 @@
-use crate::common::deco_stop;
 use crate::common::gas;
+use crate::common::dive_segment;
 
 pub trait DecoAlgorithm {
-    fn add_bottom_time(&mut self, depth: usize, time: usize, gas: &gas::Gas);
-    fn get_stops(&self, gas: &gas::Gas) -> Vec<deco_stop::DecoStop>;
+    fn add_bottom_time(&mut self, segment: &dive_segment::DiveSegment, gas: &gas::Gas);
+    fn get_stops(&self, ascent_rate: isize, descent_rate: isize, gas: &gas::Gas) -> Vec<dive_segment::DiveSegment>;
 }
