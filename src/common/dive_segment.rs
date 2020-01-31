@@ -1,9 +1,9 @@
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
 pub enum SegmentType {
     NoDeco, DecoStop, DiveSegment
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct DiveSegment {
     segment_type: SegmentType,
     depth: usize,

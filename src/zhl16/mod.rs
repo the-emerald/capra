@@ -130,12 +130,30 @@ impl ZHL16 {
 
 impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
     fn add_bottom_time(&mut self, segment: &common::dive_segment::DiveSegment,
-                       gas: &common::gas::Gas) {
-        self.add_depth_change(&segment, gas);
-        self.add_bottom(&segment, gas);
+                       gas: &common::gas::Gas) -> Option<Vec<DiveSegment>> {
+        let intermediate_stops = self.get_stops(
+            segment.get_ascent_rate(), segment.get_descent_rate(), gas);
+        let mut used_stops:Vec<DiveSegment> = Vec::new();
+
+        if intermediate_stops[0].get_segment_type() == SegmentType::DecoStop {
+            for stop in intermediate_stops.iter() {
+                if stop.get_depth() > segment.get_depth() { // Deco stop is below desired depth
+                    self.add_depth_change(stop, gas);
+                    self.add_bottom(stop, gas);
+                    used_stops.push((*stop).clone());
+                }
+            }
+            Some(used_stops)
+        }
+        else {
+            self.add_depth_change(&segment, gas);
+            self.add_bottom(&segment, gas);
+            None
+        }
     }
 
-    fn get_stops(&self, ascent_rate: isize, descent_rate: isize, gas: &common::gas::Gas) -> Vec<DiveSegment> {
+    fn get_stops(&self, ascent_rate: isize, descent_rate: isize, gas: &common::gas::Gas)
+        -> Vec<DiveSegment> {
         let mut stops: Vec<DiveSegment> = Vec::new();
         let mut virtual_zhl16 = self.clone();
 
@@ -155,7 +173,7 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
             let stop = virtual_zhl16.next_stop(ascent_rate, descent_rate, gas);
             // Do the deco stop
             virtual_zhl16.add_depth_change(&stop, gas);
-            virtual_zhl16.add_bottom_time(&stop, gas);
+            virtual_zhl16.add_bottom(&stop, gas);
             stops.push(stop);
         }
         stops
