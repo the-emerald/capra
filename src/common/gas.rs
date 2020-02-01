@@ -23,7 +23,7 @@ pub struct Gas {
 
 impl Gas {
     pub fn new(fr_n2: f32, fr_o2: f32, fr_he: f32) -> Result<Self, GasError> {
-        if fr_n2 + fr_o2 + fr_he > 1.0 {
+        if fr_n2 + fr_o2 + fr_he != 1.0 {
             return Err(GasError::FractionError)
         }
         Ok(Self {
