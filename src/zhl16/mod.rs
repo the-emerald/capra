@@ -37,7 +37,7 @@ impl ZHL16 {
             let po = self.p_n2[x];
             let pio: f32 = common::mtr_bar(segment.get_depth() as f32) * gas.fr_n2();
             let r = (rate as f32 / 10.0) * gas.fr_n2();
-            let k = LN_2 / util::ZHL16_N2_HALFLIFE[x];
+            let k = LN_2 / util::ZHL16B_N2_HALFLIFE[x];
             //println!("N2 tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
             let pn: f32 = pio + r * (t-(1.0/k)) - (pio - po - (r/k)) * E.powf(-1.0*k*t);
             self.p_n2[x] = pn;
@@ -47,7 +47,7 @@ impl ZHL16 {
             let po = self.p_he[x];
             let pio: f32 = common::mtr_bar(segment.get_depth() as f32) * gas.fr_he();
             let r = (rate as f32 / 10.0) * gas.fr_he();
-            let k = LN_2 / util::ZHL16_HE_HALFLIFE[x];
+            let k = LN_2 / util::ZHL16B_HE_HALFLIFE[x];
             //println!("He tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
             let ph: f32 = pio + r * (t-(1.0/k)) - (pio - po - (r/k)) * E.powf(-1.0*k*t);
             self.p_he[x] = ph;
@@ -61,7 +61,7 @@ impl ZHL16 {
             let po = self.p_n2[x];
             let pi = ((segment.get_depth() as f32 / 10.0) + 1.0) * gas.fr_n2();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / util::ZHL16_N2_HALFLIFE[x])));
+                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / util::ZHL16B_N2_HALFLIFE[x])));
             self.p_n2[x] = p;
             self.p_t[x] = p;
         }
@@ -69,7 +69,7 @@ impl ZHL16 {
             let po = self.p_he[x];
             let pi = ((segment.get_depth() as f32 / 10.0) + 1.0) * gas.fr_he();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / util::ZHL16_HE_HALFLIFE[x])));
+                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / util::ZHL16B_HE_HALFLIFE[x])));
             self.p_he[x] = p;
             self.p_t[x] += p;
         }
@@ -79,10 +79,10 @@ impl ZHL16 {
     pub(crate) fn find_ascent_ceiling(&self) -> f32 {
         let mut ceilings: [f32; 16] = [0.0; 16];
         for x in 0..16 {
-            let a = (util::ZHL16_N2_A[x] * self.p_n2[x] + util::ZHL16_HE_A[x] * self.p_he[x]) /
+            let a = (util::ZHL16B_N2_A[x] * self.p_n2[x] + util::ZHL16B_HE_A[x] * self.p_he[x]) /
                 (self.p_n2[x] + self.p_he[x]);
 
-            let b = (util::ZHL16_N2_B[x] * self.p_n2[x] + util::ZHL16_HE_B[x] * self.p_he[x]) /
+            let b = (util::ZHL16B_N2_B[x] * self.p_n2[x] + util::ZHL16B_HE_B[x] * self.p_he[x]) /
                 (self.p_n2[x] + self.p_he[x]);
             ceilings[x] = ((self.p_n2[x] + self.p_he[x]) - a) * b;
         }
