@@ -2,7 +2,7 @@ use crate::common;
 use std::f32::consts::{LN_2, E};
 use crate::common::dive_segment::{DiveSegment, SegmentType};
 
-mod util;
+pub mod util;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ZHL16 {
@@ -10,15 +10,28 @@ pub struct ZHL16 {
     p_he: [f32; 16],
     p_t: [f32; 16],
     diver_depth: usize,
+    n2_a: [f32; 16],
+    n2_b: [f32; 16],
+    n2_hl: [f32; 16],
+    he_a: [f32; 16],
+    he_b: [f32; 16],
+    he_hl: [f32; 16]
 }
 
 impl ZHL16 {
-    pub fn new(tissue_gas: &common::gas::Gas) -> ZHL16 {
-        ZHL16 {
+    pub fn new(tissue_gas: &common::gas::Gas, n2_a: [f32; 16], n2_b: [f32; 16], n2_hl: [f32; 16],
+    he_a: [f32;16], he_b: [f32;16], he_hl: [f32;16]) -> Self {
+        Self {
             p_n2: [tissue_gas.fr_n2(); 16],
             p_he: [tissue_gas.fr_he(); 16],
             p_t: [tissue_gas.fr_n2() + tissue_gas.fr_he(); 16],
             diver_depth: 0,
+            n2_a,
+            n2_b,
+            n2_hl,
+            he_a,
+            he_b,
+            he_hl
         }
     }
 
@@ -37,7 +50,7 @@ impl ZHL16 {
             let po = self.p_n2[x];
             let pio: f32 = common::mtr_bar(segment.get_depth() as f32) * gas.fr_n2();
             let r = (rate as f32 / 10.0) * gas.fr_n2();
-            let k = LN_2 / util::ZHL16B_N2_HALFLIFE[x];
+            let k = LN_2 / self.n2_hl[x];
             //println!("N2 tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
             let pn: f32 = pio + r * (t-(1.0/k)) - (pio - po - (r/k)) * E.powf(-1.0*k*t);
             self.p_n2[x] = pn;
@@ -47,7 +60,7 @@ impl ZHL16 {
             let po = self.p_he[x];
             let pio: f32 = common::mtr_bar(segment.get_depth() as f32) * gas.fr_he();
             let r = (rate as f32 / 10.0) * gas.fr_he();
-            let k = LN_2 / util::ZHL16B_HE_HALFLIFE[x];
+            let k = LN_2 / self.he_hl[x];
             //println!("He tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
             let ph: f32 = pio + r * (t-(1.0/k)) - (pio - po - (r/k)) * E.powf(-1.0*k*t);
             self.p_he[x] = ph;
@@ -61,7 +74,7 @@ impl ZHL16 {
             let po = self.p_n2[x];
             let pi = ((segment.get_depth() as f32 / 10.0) + 1.0) * gas.fr_n2();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / util::ZHL16B_N2_HALFLIFE[x])));
+                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / self.n2_hl[x])));
             self.p_n2[x] = p;
             self.p_t[x] = p;
         }
@@ -69,7 +82,7 @@ impl ZHL16 {
             let po = self.p_he[x];
             let pi = ((segment.get_depth() as f32 / 10.0) + 1.0) * gas.fr_he();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / util::ZHL16B_HE_HALFLIFE[x])));
+                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / self.he_hl[x])));
             self.p_he[x] = p;
             self.p_t[x] += p;
         }
@@ -79,10 +92,10 @@ impl ZHL16 {
     pub(crate) fn find_ascent_ceiling(&self) -> f32 {
         let mut ceilings: [f32; 16] = [0.0; 16];
         for x in 0..16 {
-            let a = (util::ZHL16B_N2_A[x] * self.p_n2[x] + util::ZHL16B_HE_A[x] * self.p_he[x]) /
+            let a = (self.n2_a[x] * self.p_n2[x] + self.he_a[x] * self.p_he[x]) /
                 (self.p_n2[x] + self.p_he[x]);
 
-            let b = (util::ZHL16B_N2_B[x] * self.p_n2[x] + util::ZHL16B_HE_B[x] * self.p_he[x]) /
+            let b = (self.n2_b[x] * self.p_n2[x] + self.he_b[x] * self.p_he[x]) /
                 (self.p_n2[x] + self.p_he[x]);
             ceilings[x] = ((self.p_n2[x] + self.p_he[x]) - a) * b;
         }
