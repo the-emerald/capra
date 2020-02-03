@@ -1,8 +1,8 @@
-use rustdeco::zhl16;
-use rustdeco::common;
-use rustdeco::common::deco_algorithm::DecoAlgorithm;
-use rustdeco::common::dive_segment::{DiveSegment, SegmentType};
-use rustdeco::common::gas::Gas;
+use capra::zhl16;
+use capra::common;
+use capra::common::deco_algorithm::DecoAlgorithm;
+use capra::common::dive_segment::{DiveSegment, SegmentType};
+use capra::common::gas::Gas;
 
 fn pretty_print_deco_stops(stops: Vec<DiveSegment>, gas: &Gas) {
     println!("{:?}", gas);
@@ -27,8 +27,8 @@ fn pretty_print_segment_deco(depth: usize, time: usize, gas: &Gas,
                              seg_deco: Option<Vec<DiveSegment>>) {
 
     match seg_deco {
-        Some(T) => {
-            pretty_print_deco_stops(T, gas);
+        Some(t) => {
+            pretty_print_deco_stops(t, gas);
             println!("Dive at {}m for {}min\n", depth, time);
         },
 
@@ -59,17 +59,17 @@ fn main() {
                                          time_1, ascent_rate,
                                          descent_rate);
 
-    let first_segment_deco = dive.add_bottom_time(&first_segment, &air);
-    pretty_print_segment_deco(depth_1, time_1, &air, first_segment_deco);
+    let first_segment_deco = dive.add_bottom_time(&first_segment, &trimix_21_35);
+    pretty_print_segment_deco(depth_1, time_1, &trimix_21_35, first_segment_deco);
 
     let depth_2 = 10;
     let time_2 = 20;
     let second_segment = DiveSegment::new(SegmentType::DiveSegment,
                                           depth_2, time_2, ascent_rate, descent_rate);
 
-    let second_segment_deco = dive.add_bottom_time(&second_segment, &air);
-    pretty_print_segment_deco(depth_2, time_2, &air, second_segment_deco);
+    let second_segment_deco = dive.add_bottom_time(&second_segment, &half_o2);
+    pretty_print_segment_deco(depth_2, time_2, &half_o2, second_segment_deco);
 
-    let final_deco = dive.get_stops(ascent_rate, descent_rate, &air);
-    pretty_print_deco_stops(final_deco, &air);
+    let final_deco = dive.get_stops(ascent_rate, descent_rate, &half_o2);
+    pretty_print_deco_stops(final_deco, &half_o2);
 }
