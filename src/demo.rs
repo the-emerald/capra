@@ -45,19 +45,23 @@ fn main() {
     let trimix_21_35 = common::gas::Gas::new(0.44, 0.21, 0.35).unwrap();
     let half_o2 = common::gas::Gas::new(0.5, 0.5, 0.0).unwrap();
 
+    let gf_low = 50;
+    let gf_high = 80;
     let mut dive = zhl16::ZHL16::new(&air,
                                      zhl16::util::ZHL16B_N2_A,
                                      zhl16::util::ZHL16B_N2_B,
                                      zhl16::util::ZHL16B_N2_HALFLIFE,
                                      zhl16::util::ZHL16B_HE_A,
                                      zhl16::util::ZHL16B_HE_B,
-                                     zhl16::util::ZHL16B_HE_HALFLIFE);
+                                     zhl16::util::ZHL16B_HE_HALFLIFE,
+                                     gf_low, gf_high);
 
     let ascent_rate = -10;
     let descent_rate = 20;
 
-    println!("Descent rate: {}m/min, ascent rate: {}m/min\n", descent_rate,
+    println!("Descent rate: {}m/min, ascent rate: {}m/min", descent_rate,
              ascent_rate);
+    println!("GFL: {}, GFH: {}\n", gf_low, gf_high);
 
     let depth_1 = 45;
     let time_1 = 60;
@@ -65,17 +69,17 @@ fn main() {
                                          time_1, ascent_rate,
                                          descent_rate);
 
-    let first_segment_deco = dive.add_bottom_time(&first_segment, &air);
-    pretty_print_segment_deco(depth_1, time_1, &air, first_segment_deco);
+    let first_segment_deco = dive.add_bottom_time(&first_segment, &trimix_21_35);
+    pretty_print_segment_deco(depth_1, time_1, &trimix_21_35, first_segment_deco);
 
     let depth_2 = 10;
     let time_2 = 20;
     let second_segment = DiveSegment::new(SegmentType::DiveSegment,
                                           depth_2, time_2, ascent_rate, descent_rate);
 
-    let second_segment_deco = dive.add_bottom_time(&second_segment, &air);
-    pretty_print_segment_deco(depth_2, time_2, &air, second_segment_deco);
+    let second_segment_deco = dive.add_bottom_time(&second_segment, &trimix_21_35);
+    pretty_print_segment_deco(depth_2, time_2, &trimix_21_35, second_segment_deco);
 
-    let final_deco = dive.get_stops(ascent_rate, descent_rate, &air);
-    pretty_print_deco_stops(final_deco, &air);
+    let final_deco = dive.get_stops(ascent_rate, descent_rate, &half_o2);
+    pretty_print_deco_stops(final_deco, &half_o2);
 }
