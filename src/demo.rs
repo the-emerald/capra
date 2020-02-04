@@ -80,6 +80,13 @@ fn main() {
     let second_segment_deco = dive.add_bottom_time(&second_segment, &trimix_21_35);
     pretty_print_segment_deco(depth_2, time_2, &trimix_21_35, second_segment_deco);
 
-    let final_deco = dive.get_stops(ascent_rate, descent_rate, &half_o2);
-    pretty_print_deco_stops(final_deco, &half_o2);
+    let depth_deco_1 = 9;
+    let time_deco_1 = 15;
+    let deco_1 = DiveSegment::new(SegmentType::DiveSegment,
+                                          depth_deco_1, time_deco_1, ascent_rate, descent_rate);
+    let deco_1_segment = dive.add_bottom_time(&deco_1, &half_o2);
+    pretty_print_segment_deco(depth_deco_1, time_deco_1, &half_o2, deco_1_segment);
+
+    let final_deco = dive.get_stops(ascent_rate, descent_rate, &pure_o2);
+    pretty_print_deco_stops(final_deco, &pure_o2);
 }

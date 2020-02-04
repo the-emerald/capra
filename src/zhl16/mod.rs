@@ -126,7 +126,7 @@ impl ZHL16 {
         ceilings.iter().cloned().fold(0./0., f32::max)
     }
 
-    pub(crate) fn next_stop(&mut self, ascent_rate: isize, descent_rate: isize,
+    pub(crate) fn next_stop(&self, ascent_rate: isize, descent_rate: isize,
                             gas: &common::gas::Gas) -> DiveSegment {
         let stop_depth = (3.0*(
             (common::bar_mtr(self.find_ascent_ceiling())/3.0)
@@ -175,13 +175,20 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
 
         if intermediate_stops[0].get_segment_type() == SegmentType::DecoStop {
             for stop in intermediate_stops.iter() {
-                if stop.get_depth() > segment.get_depth() { // Deco stop is below desired depth
+                if stop.get_depth() >= segment.get_depth() { // Deco stop is below desired depth
                     self.add_depth_change(stop, gas);
                     self.add_bottom(stop, gas);
-                    used_stops.push((*stop).clone());
+                    if stop.get_depth() != segment.get_depth() { // Fix issue when depth == stop
+                        used_stops.push((*stop).clone());
+                    }
                 }
             }
-            Some(used_stops)
+            if used_stops.is_empty() {
+                None
+            }
+            else {
+                Some(used_stops)
+            }
         }
         else {
             self.add_depth_change(&segment, gas);
