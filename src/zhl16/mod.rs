@@ -17,19 +17,27 @@ pub struct ZHL16 {
     he_b: [f32; 16],
     he_hl: [f32; 16],
 
-    diver_max_depth: usize,
+    first_deco_depth: Option<usize>,
     gf_low: f32,
     gf_high: f32,
-    use_high: bool
 }
 
 impl ZHL16 {
     pub fn new(tissue_gas: &common::gas::Gas, n2_a: [f32; 16], n2_b: [f32; 16], n2_hl: [f32; 16],
     he_a: [f32;16], he_b: [f32;16], he_hl: [f32;16], gf_low: usize, gf_high: usize) -> Self {
+        let adjusted_fr_n2 = tissue_gas.fr_n2() * (1.0 - util::ZHL16_WATER_VAPOUR_PRESSURE);
+        let adjusted_fr_he;
+        if tissue_gas.fr_he() >= util::ZHL16_WATER_VAPOUR_PRESSURE {
+            adjusted_fr_he = tissue_gas.fr_he() * (1.0 - util::ZHL16_WATER_VAPOUR_PRESSURE)
+        }
+        else {
+            adjusted_fr_he = tissue_gas.fr_he()
+        }
+
         Self {
-            p_n2: [tissue_gas.fr_n2(); 16],
-            p_he: [tissue_gas.fr_he(); 16],
-            p_t: [tissue_gas.fr_n2() + tissue_gas.fr_he(); 16],
+            p_n2: [adjusted_fr_n2; 16],
+            p_he: [adjusted_fr_he; 16],
+            p_t: [adjusted_fr_n2 + adjusted_fr_he; 16],
             diver_depth: 0,
             n2_a,
             n2_b,
@@ -37,22 +45,31 @@ impl ZHL16 {
             he_a,
             he_b,
             he_hl,
-            diver_max_depth: 0,
+
+            first_deco_depth: None,
             gf_low: gf_low as f32/100.0,
             gf_high: gf_high as f32/100.0,
-            use_high: false
         }
     }
 
-    fn update_max_depth(&mut self, current_depth: usize) {
-        if current_depth > self.diver_max_depth {
-            self.diver_max_depth = current_depth;
+    fn update_first_deco_depth(&mut self, deco_depth: usize) {
+        match self.first_deco_depth {
+            Some(t) => return,
+            None => self.first_deco_depth = Some(deco_depth)
         }
     }
 
     fn gf_at_depth(&self, depth: usize) -> f32 {
-        self.gf_high - ((self.gf_high - self.gf_low) / common::mtr_bar(
-            self.diver_max_depth as f32)) * common::mtr_bar(depth as f32)
+        match self.first_deco_depth {
+            Some(t) => {
+                if depth > 0 {
+                    return self.gf_high + ((self.gf_high - self.gf_low) /
+                        (0.0 - t as f32)) * (depth as f32)
+                }
+                self.gf_high // We must be on the surface, by definition use gf_high
+            }
+            None => self.gf_high
+        }
     }
 
     pub(crate) fn add_depth_change(&mut self, segment: &DiveSegment, gas: &common::gas::Gas) {
@@ -89,13 +106,13 @@ impl ZHL16 {
             self.p_t[x] += ph;
         }
         self.diver_depth = segment.get_depth();
-        self.update_max_depth(segment.get_depth());
+        //self.update_max_depth(segment.get_depth());
     }
 
     pub(crate) fn add_bottom(&mut self, segment: &DiveSegment, gas: &common::gas::Gas) {
         for x in 0..16 {
             let po = self.p_n2[x];
-            let pi = ((segment.get_depth() as f32 / 10.0) + 1.0 -
+            let pi = (common::mtr_bar(segment.get_depth() as f32) -
                 util::ZHL16_WATER_VAPOUR_PRESSURE) * gas.fr_n2();
             let p = po + (pi - po) *
                 (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / self.n2_hl[x])));
@@ -104,7 +121,7 @@ impl ZHL16 {
         }
         for x in 0..16 {
             let po = self.p_he[x];
-            let pi = ((segment.get_depth() as f32 / 10.0) + 1.0 -
+            let pi = (common::mtr_bar(segment.get_depth() as f32) -
                 util::ZHL16_WATER_VAPOUR_PRESSURE) * gas.fr_he();
             let p = po + (pi - po) *
                 (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / self.he_hl[x])));
@@ -112,13 +129,16 @@ impl ZHL16 {
             self.p_t[x] += p;
         }
         self.diver_depth = segment.get_depth();
-        self.update_max_depth(segment.get_depth());
+        //self.update_max_depth(segment.get_depth());
     }
 
     pub(crate) fn find_ascent_ceiling(&self) -> f32 {
         let mut ceilings: [f32; 16] = [0.0; 16];
-        let gf = self.gf_at_depth(self.diver_depth);
-        //println!("GF: {}", gf);
+        let gf;
+        match self.first_deco_depth {
+            Some(t) => gf = self.gf_at_depth(self.diver_depth),
+            None => gf = self.gf_low
+        }
         for x in 0..16 {
             let a = (self.n2_a[x] * self.p_n2[x] + self.he_a[x] * self.p_he[x]) /
                 (self.p_n2[x] + self.p_he[x]);
@@ -143,6 +163,7 @@ impl ZHL16 {
                                            stop_depth, stop_time, ascent_rate, descent_rate);
             virtual_zhl16.add_depth_change(&segment, gas);
             virtual_zhl16.add_bottom(&segment, gas);
+            virtual_zhl16.update_first_deco_depth(segment.get_depth());
             in_limit = virtual_zhl16.find_ascent_ceiling() < common::mtr_bar(stop_depth as f32)
                 - 0.3;
             stop_time += 1;
@@ -183,6 +204,7 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
                     self.add_depth_change(stop, gas);
                     self.add_bottom(stop, gas);
                     if stop.get_depth() != segment.get_depth() { // Fix issue when depth == stop
+                        self.update_first_deco_depth(stop.get_depth());
                         used_stops.push((*stop).clone());
                     }
                 }
@@ -220,6 +242,7 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
 
         while virtual_zhl16.find_ascent_ceiling() > 1.0 {
             let stop = virtual_zhl16.next_stop(ascent_rate, descent_rate, gas);
+            virtual_zhl16.update_first_deco_depth(stop.get_depth());
             // Do the deco stop
             virtual_zhl16.add_depth_change(&stop, gas);
             virtual_zhl16.add_bottom(&stop, gas);

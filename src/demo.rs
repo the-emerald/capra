@@ -4,8 +4,12 @@ use capra::common::deco_algorithm::DecoAlgorithm;
 use capra::common::dive_segment::{DiveSegment, SegmentType};
 use capra::common::gas::Gas;
 
+fn gas_string(gas: &Gas) -> String {
+    format!("{}/{}", (gas.fr_o2()*100.0) as usize, (gas.fr_he()*100.0) as usize)
+}
+
 fn pretty_print_deco_stops(stops: Vec<DiveSegment>, gas: &Gas) {
-    println!("{:?}", gas);
+    //println!("{:?}", gas);
     for stop in stops {
         match stop.get_segment_type() {
             SegmentType::NoDeco => {
@@ -16,8 +20,8 @@ fn pretty_print_deco_stops(stops: Vec<DiveSegment>, gas: &Gas) {
                     println!("{:?}: {}min", stop.get_segment_type(), stop.get_time())
                 }
             },
-            SegmentType::DecoStop => println!("{:?}: {}m for {}min", stop.get_segment_type(),
-                                              stop.get_depth(), stop.get_time()),
+            SegmentType::DecoStop => println!("{:?}: {}m for {}min on {}", stop.get_segment_type(),
+                                              stop.get_depth(), stop.get_time(), gas_string(gas)),
             _ => {}
         }
     }
@@ -28,12 +32,11 @@ fn pretty_print_segment_deco(depth: usize, time: usize, gas: &Gas,
     match seg_deco {
         Some(t) => {
             pretty_print_deco_stops(t, gas);
-            println!("Dive at {}m for {}min\n", depth, time);
+            println!("Dive at {}m for {}min on {}\n", depth, time, gas_string(gas));
         },
 
         None => {
-            println!("{:?}", gas);
-            println!("Dive to {}m for {}min\n", depth, time);
+            println!("Dive to {}m for {}min on {}\n", depth, time, gas_string(gas));
         }
     };
 }
@@ -45,8 +48,8 @@ fn main() {
     let trimix_21_35 = common::gas::Gas::new(0.44, 0.21, 0.35).unwrap();
     let half_o2 = common::gas::Gas::new(0.5, 0.5, 0.0).unwrap();
 
-    let gf_low = 100;
-    let gf_high = 100;
+    let gf_low = 50;
+    let gf_high = 85;
     let mut dive = zhl16::ZHL16::new(&air,
                                      zhl16::util::ZHL16B_N2_A,
                                      zhl16::util::ZHL16B_N2_B,
@@ -63,8 +66,8 @@ fn main() {
              ascent_rate);
     println!("GFL: {}, GFH: {}\n", gf_low, gf_high);
 
-    let depth_1 = 60;
-    let time_1 = 60;
+    let depth_1 = 45;
+    let time_1 = 30;
     let first_segment = DiveSegment::new(SegmentType::DiveSegment, depth_1,
                                          time_1, ascent_rate,
                                          descent_rate);
@@ -72,21 +75,6 @@ fn main() {
     let first_segment_deco = dive.add_bottom_time(&first_segment, &trimix_21_35);
     pretty_print_segment_deco(depth_1, time_1, &trimix_21_35, first_segment_deco);
 
-    let depth_2 = 10;
-    let time_2 = 20;
-    let second_segment = DiveSegment::new(SegmentType::DiveSegment,
-                                          depth_2, time_2, ascent_rate, descent_rate);
-
-    let second_segment_deco = dive.add_bottom_time(&second_segment, &trimix_21_35);
-    pretty_print_segment_deco(depth_2, time_2, &trimix_21_35, second_segment_deco);
-
-    let depth_deco_1 = 9;
-    let time_deco_1 = 15;
-    let deco_1 = DiveSegment::new(SegmentType::DiveSegment,
-                                          depth_deco_1, time_deco_1, ascent_rate, descent_rate);
-    let deco_1_segment = dive.add_bottom_time(&deco_1, &half_o2);
-    pretty_print_segment_deco(depth_deco_1, time_deco_1, &half_o2, deco_1_segment);
-
-    let final_deco = dive.get_stops(ascent_rate, descent_rate, &pure_o2);
-    pretty_print_deco_stops(final_deco, &pure_o2);
+    let final_deco = dive.get_stops(ascent_rate, descent_rate, &half_o2);
+    pretty_print_deco_stops(final_deco, &half_o2);
 }
