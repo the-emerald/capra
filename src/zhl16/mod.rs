@@ -68,7 +68,8 @@ impl ZHL16 {
         let t: f32 = delta_depth as f32 / rate as f32;
         for x in 0..16 {
             let po = self.p_n2[x];
-            let pio: f32 = common::mtr_bar(segment.get_depth() as f32) * gas.fr_n2();
+            let pio: f32 = (common::mtr_bar(segment.get_depth() as f32) -
+                util::ZHL16_WATER_VAPOUR_PRESSURE) * gas.fr_n2();
             let r = (rate as f32 / 10.0) * gas.fr_n2();
             let k = LN_2 / self.n2_hl[x];
             //println!("N2 tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
@@ -78,7 +79,8 @@ impl ZHL16 {
         }
         for x in 0..16 {
             let po = self.p_he[x];
-            let pio: f32 = common::mtr_bar(segment.get_depth() as f32) * gas.fr_he();
+            let pio: f32 = (common::mtr_bar(segment.get_depth() as f32) -
+                util::ZHL16_WATER_VAPOUR_PRESSURE) * gas.fr_he();
             let r = (rate as f32 / 10.0) * gas.fr_he();
             let k = LN_2 / self.he_hl[x];
             //println!("He tissue {}:: po: {}, pio: {}, r: {}, k: {}", x+1, po, pio, r, k);
@@ -93,7 +95,8 @@ impl ZHL16 {
     pub(crate) fn add_bottom(&mut self, segment: &DiveSegment, gas: &common::gas::Gas) {
         for x in 0..16 {
             let po = self.p_n2[x];
-            let pi = ((segment.get_depth() as f32 / 10.0) + 1.0) * gas.fr_n2();
+            let pi = ((segment.get_depth() as f32 / 10.0) + 1.0 -
+                util::ZHL16_WATER_VAPOUR_PRESSURE) * gas.fr_n2();
             let p = po + (pi - po) *
                 (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / self.n2_hl[x])));
             self.p_n2[x] = p;
@@ -101,7 +104,8 @@ impl ZHL16 {
         }
         for x in 0..16 {
             let po = self.p_he[x];
-            let pi = ((segment.get_depth() as f32 / 10.0) + 1.0) * gas.fr_he();
+            let pi = ((segment.get_depth() as f32 / 10.0) + 1.0 -
+                util::ZHL16_WATER_VAPOUR_PRESSURE) * gas.fr_he();
             let p = po + (pi - po) *
                 (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / self.he_hl[x])));
             self.p_he[x] = p;

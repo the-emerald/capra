@@ -45,8 +45,8 @@ fn main() {
     let trimix_21_35 = common::gas::Gas::new(0.44, 0.21, 0.35).unwrap();
     let half_o2 = common::gas::Gas::new(0.5, 0.5, 0.0).unwrap();
 
-    let gf_low = 50;
-    let gf_high = 80;
+    let gf_low = 100;
+    let gf_high = 100;
     let mut dive = zhl16::ZHL16::new(&air,
                                      zhl16::util::ZHL16B_N2_A,
                                      zhl16::util::ZHL16B_N2_B,
@@ -63,7 +63,7 @@ fn main() {
              ascent_rate);
     println!("GFL: {}, GFH: {}\n", gf_low, gf_high);
 
-    let depth_1 = 45;
+    let depth_1 = 60;
     let time_1 = 60;
     let first_segment = DiveSegment::new(SegmentType::DiveSegment, depth_1,
                                          time_1, ascent_rate,
