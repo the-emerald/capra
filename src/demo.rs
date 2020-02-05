@@ -45,7 +45,11 @@ fn main() {
     let ean32 = common::gas::Gas::new(0.68, 0.32, 0.0).unwrap();
     let air = common::gas::Gas::new(0.79, 0.21, 0.0).unwrap();
     let pure_o2 = common::gas::Gas::new(0.0, 1.0, 0.0).unwrap();
+    let trimix_18_45 = common::gas::Gas::new(0.37, 0.18, 0.45).unwrap();
     let trimix_21_35 = common::gas::Gas::new(0.44, 0.21, 0.35).unwrap();
+    let trimix_31_25 = common::gas::Gas::new(0.44, 0.31, 0.25).unwrap();
+
+
     let half_o2 = common::gas::Gas::new(0.5, 0.5, 0.0).unwrap();
 
     let gf_low = 50;
@@ -66,15 +70,33 @@ fn main() {
              ascent_rate);
     println!("GFL: {}, GFH: {}\n", gf_low, gf_high);
 
-    let depth_1 = 45;
-    let time_1 = 30;
+    let depth_1 = 60;
+    let time_1 = 60;
     let first_segment = DiveSegment::new(SegmentType::DiveSegment, depth_1,
                                          time_1, ascent_rate,
                                          descent_rate);
 
-    let first_segment_deco = dive.add_bottom_time(&first_segment, &trimix_21_35);
-    pretty_print_segment_deco(depth_1, time_1, &trimix_21_35, first_segment_deco);
+    let first_segment_deco = dive.add_bottom_time(&first_segment, &trimix_18_45);
+    pretty_print_segment_deco(depth_1, time_1, &trimix_18_45, first_segment_deco);
 
-    let final_deco = dive.get_stops(ascent_rate, descent_rate, &half_o2);
-    pretty_print_deco_stops(final_deco, &half_o2);
+    let deco_stop_1_depth = 21;
+    let deco_stop_1_time = 10;
+    let deco_stop_1 = DiveSegment::new(SegmentType::DecoStop, deco_stop_1_depth,
+                                       deco_stop_1_time, ascent_rate,
+                                       descent_rate);
+
+    let deco_stop_1_segment = dive.add_bottom_time(&deco_stop_1, &trimix_18_45);
+    pretty_print_segment_deco(deco_stop_1_depth, deco_stop_1_time, &trimix_18_45, deco_stop_1_segment);
+
+    let deco_stop_2_depth = 9;
+    let deco_stop_2_time = 21;
+    let deco_stop_2 = DiveSegment::new(SegmentType::DecoStop, deco_stop_2_depth,
+                                       deco_stop_2_time, ascent_rate,
+                                       descent_rate);
+
+    let deco_stop_2_segment = dive.add_bottom_time(&deco_stop_2, &half_o2);
+    pretty_print_segment_deco(deco_stop_2_depth, deco_stop_2_time, &half_o2, deco_stop_2_segment);
+
+    let final_deco = dive.get_stops(ascent_rate, descent_rate, &pure_o2);
+    pretty_print_deco_stops(final_deco, &pure_o2);
 }
