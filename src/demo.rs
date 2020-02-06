@@ -71,7 +71,7 @@ fn main() {
     println!("GFL: {}, GFH: {}\n", gf_low, gf_high);
 
     let depth_1 = 60;
-    let time_1 = 60;
+    let time_1 = 75;
     let first_segment = DiveSegment::new(SegmentType::DiveSegment, depth_1,
                                          time_1, ascent_rate,
                                          descent_rate);
@@ -79,8 +79,8 @@ fn main() {
     let first_segment_deco = dive.add_bottom_time(&first_segment, &trimix_18_45);
     pretty_print_segment_deco(depth_1, time_1, &trimix_18_45, first_segment_deco);
 
-    let deco_stop_1_depth = 21;
-    let deco_stop_1_time = 10;
+    let deco_stop_1_depth = 24;
+    let deco_stop_1_time = 9;
     let deco_stop_1 = DiveSegment::new(SegmentType::DecoStop, deco_stop_1_depth,
                                        deco_stop_1_time, ascent_rate,
                                        descent_rate);
@@ -89,7 +89,7 @@ fn main() {
     pretty_print_segment_deco(deco_stop_1_depth, deco_stop_1_time, &trimix_18_45, deco_stop_1_segment);
 
     let deco_stop_2_depth = 9;
-    let deco_stop_2_time = 21;
+    let deco_stop_2_time = 26;
     let deco_stop_2 = DiveSegment::new(SegmentType::DecoStop, deco_stop_2_depth,
                                        deco_stop_2_time, ascent_rate,
                                        descent_rate);
