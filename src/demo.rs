@@ -8,7 +8,7 @@ fn gas_string(gas: &Gas) -> String {
     format!("{}/{}", (gas.fr_o2()*100.0) as usize, (gas.fr_he()*100.0) as usize)
 }
 
-fn pretty_print_deco_stops(stops: Vec<DiveSegment>, gas: &Gas) {
+fn pretty_print_deco_stops(stops: &Vec<DiveSegment>, gas: &Gas) {
     //println!("{:?}", gas);
     for stop in stops {
         match stop.get_segment_type() {
@@ -28,7 +28,7 @@ fn pretty_print_deco_stops(stops: Vec<DiveSegment>, gas: &Gas) {
 }
 
 fn pretty_print_segment_deco(depth: usize, time: usize, gas: &Gas,
-                             seg_deco: Option<Vec<DiveSegment>>) {
+                             seg_deco: &Option<Vec<DiveSegment>>) {
     match seg_deco {
         Some(t) => {
             pretty_print_deco_stops(t, gas);
@@ -77,7 +77,7 @@ fn main() {
                                          descent_rate);
 
     let first_segment_deco = dive.add_bottom_time(&first_segment, &trimix_18_45);
-    pretty_print_segment_deco(depth_1, time_1, &trimix_18_45, first_segment_deco);
+    pretty_print_segment_deco(depth_1, time_1, &trimix_18_45, &first_segment_deco);
 
     let deco_stop_1_depth = 24;
     let deco_stop_1_time = 9;
@@ -86,7 +86,7 @@ fn main() {
                                        descent_rate);
 
     let deco_stop_1_segment = dive.add_bottom_time(&deco_stop_1, &trimix_18_45);
-    pretty_print_segment_deco(deco_stop_1_depth, deco_stop_1_time, &trimix_18_45, deco_stop_1_segment);
+    pretty_print_segment_deco(deco_stop_1_depth, deco_stop_1_time, &trimix_18_45, &deco_stop_1_segment);
 
     let deco_stop_2_depth = 9;
     let deco_stop_2_time = 26;
@@ -95,8 +95,8 @@ fn main() {
                                        descent_rate);
 
     let deco_stop_2_segment = dive.add_bottom_time(&deco_stop_2, &half_o2);
-    pretty_print_segment_deco(deco_stop_2_depth, deco_stop_2_time, &half_o2, deco_stop_2_segment);
+    pretty_print_segment_deco(deco_stop_2_depth, deco_stop_2_time, &half_o2, &deco_stop_2_segment);
 
     let final_deco = dive.get_stops(ascent_rate, descent_rate, &pure_o2);
-    pretty_print_deco_stops(final_deco, &pure_o2);
+    pretty_print_deco_stops(&final_deco, &pure_o2);
 }
