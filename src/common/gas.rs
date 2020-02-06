@@ -1,3 +1,5 @@
+use crate::common::mtr_bar;
+
 #[derive(Debug)]
 pub enum GasError {
     FractionError
@@ -44,4 +46,8 @@ impl Gas {
     pub fn fr_he(&self) -> f32 {
         self.fr_he
     }
+}
+
+pub fn partial_pressure(depth: usize, fr: f32) -> f32 {
+    mtr_bar(depth as f32) * fr
 }

@@ -1,12 +1,13 @@
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
 pub enum SegmentType {
-    NoDeco, DecoStop, DiveSegment
+    NoDeco, DecoStop, DiveSegment, AscDesc
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct DiveSegment {
     segment_type: SegmentType,
-    depth: usize,
+    start_depth: usize,
+    end_depth: usize,
     time: usize,
     // Ascent rate and descent rate are for reaching the current DiveSegment from the previous.
     ascent_rate: isize,
@@ -14,13 +15,14 @@ pub struct DiveSegment {
 }
 
 impl DiveSegment {
-    pub fn new(segment_type: SegmentType, depth: usize, time: usize, ascent_rate: isize, descent_rate: isize) -> Self {
+    pub fn new(segment_type: SegmentType, start_depth: usize, end_depth: usize, time: usize, ascent_rate: isize, descent_rate: isize) -> Self {
         Self {
             segment_type,
-            depth,
+            start_depth,
+            end_depth,
             time,
             ascent_rate,
-            descent_rate
+            descent_rate,
         }
     }
 
@@ -28,8 +30,12 @@ impl DiveSegment {
         self.segment_type
     }
 
-    pub fn get_depth(&self) -> usize {
-        self.depth
+    pub fn get_start_depth(&self) -> usize {
+        self.start_depth
+    }
+
+    pub fn get_end_depth(&self) -> usize {
+        self.end_depth
     }
 
     pub fn get_time(&self) -> usize {
