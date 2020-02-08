@@ -83,30 +83,27 @@ fn main() {
     let time_1 = 75;
     let first_segment = DiveSegment::new(SegmentType::DiveSegment, depth_1, depth_1,
                                          time_1, ascent_rate,
-                                         descent_rate);
+                                         descent_rate).unwrap();
 
     let first_segment_deco = dive.add_bottom_time(&first_segment, &trimix_18_45);
-    optional_update_segment(&mut all_segments, &Some(vec![first_segment]));
     pretty_print_segment_deco(depth_1, time_1, &trimix_18_45, &first_segment_deco);
 
     let deco_stop_1_depth = 24;
     let deco_stop_1_time = 10;
     let deco_stop_1 = DiveSegment::new(SegmentType::DecoStop, deco_stop_1_depth, deco_stop_1_depth,
                                        deco_stop_1_time, ascent_rate,
-                                       descent_rate);
+                                       descent_rate).unwrap();
 
     let deco_stop_1_segment = dive.add_bottom_time(&deco_stop_1, &trimix_18_45);
-    optional_update_segment(&mut all_segments, &deco_stop_1_segment);
     pretty_print_segment_deco(deco_stop_1_depth, deco_stop_1_time, &trimix_18_45, &deco_stop_1_segment);
 
     let deco_stop_2_depth = 9;
     let deco_stop_2_time = 26;
     let deco_stop_2 = DiveSegment::new(SegmentType::DecoStop, deco_stop_2_depth, deco_stop_2_depth,
                                        deco_stop_2_time, ascent_rate,
-                                       descent_rate);
+                                       descent_rate).unwrap();
 
     let deco_stop_2_segment = dive.add_bottom_time(&deco_stop_2, &half_o2);
-    optional_update_segment(&mut all_segments, &deco_stop_2_segment);
     pretty_print_segment_deco(deco_stop_2_depth, deco_stop_2_time, &half_o2, &deco_stop_2_segment);
 
     let final_deco = dive.get_stops(ascent_rate, descent_rate, &pure_o2);

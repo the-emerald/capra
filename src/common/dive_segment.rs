@@ -1,3 +1,22 @@
+use crate::common::dive_segment::SegmentType::AscDesc;
+use crate::common::dive_segment::DiveSegmentError::IncorrectSegmentTypeError;
+
+#[derive(Debug)]
+pub enum DiveSegmentError {
+    IncorrectSegmentTypeError
+}
+
+impl std::error::Error for DiveSegmentError {}
+
+impl std::fmt::Display for DiveSegmentError {
+    fn fmt(&self, f: &mut std::fmt::Formatter)
+           -> std::fmt::Result {
+        match self {
+            DiveSegmentError::IncorrectSegmentTypeError => write!(f, "Segment was not AscDesc but start and end depth did not match."),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
 pub enum SegmentType {
     NoDeco, DecoStop, DiveSegment, AscDesc
@@ -15,15 +34,20 @@ pub struct DiveSegment {
 }
 
 impl DiveSegment {
-    pub fn new(segment_type: SegmentType, start_depth: usize, end_depth: usize, time: usize, ascent_rate: isize, descent_rate: isize) -> Self {
-        Self {
+    pub fn new(segment_type: SegmentType, start_depth: usize, end_depth: usize, time: usize,
+               ascent_rate: isize, descent_rate: isize) -> Result<Self, DiveSegmentError> {
+        if segment_type != AscDesc && start_depth != end_depth {
+            return Err(IncorrectSegmentTypeError)
+        }
+
+        Ok(Self {
             segment_type,
             start_depth,
             end_depth,
             time,
             ascent_rate,
             descent_rate,
-        }
+        })
     }
 
     pub fn get_segment_type(&self) -> SegmentType {
