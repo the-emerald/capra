@@ -3,14 +3,8 @@ use capra::common;
 use capra::common::deco_algorithm::DecoAlgorithm;
 use capra::common::dive_segment::{DiveSegment, SegmentType};
 use capra::common::gas::Gas;
+use capra::common::otu::calculate_otu;
 
-fn optional_update_segment<'a>(segments: &'a mut Vec<DiveSegment>, candidate: &Option<Vec<DiveSegment>>) -> &'a mut Vec<DiveSegment> {
-    match candidate {
-        Some(t) => segments.append(t.clone().as_mut()),
-        None => {}
-    }
-    segments
-}
 fn gas_string(gas: &Gas) -> String {
     format!("{}/{}", (gas.fr_o2()*100.0) as usize, (gas.fr_he()*100.0) as usize)
 }
@@ -50,6 +44,7 @@ fn pretty_print_segment_deco(depth: usize, time: usize, gas: &Gas,
 
 fn main() {
     let mut all_segments: Vec<DiveSegment> = Vec::new();
+    let mut otus: f64 = 0.0;
 
     let ean32 = common::gas::Gas::new(0.68, 0.32, 0.0).unwrap();
     let air = common::gas::Gas::new(0.79, 0.21, 0.0).unwrap();
@@ -88,6 +83,8 @@ fn main() {
     let first_segment_deco = dive.add_bottom_time(&first_segment, &trimix_18_45);
     pretty_print_segment_deco(depth_1, time_1, &trimix_18_45, &first_segment_deco);
 
+    otus += calculate_otu(&vec![first_segment], &trimix_18_45);
+
     let deco_stop_1_depth = 24;
     let deco_stop_1_time = 10;
     let deco_stop_1 = DiveSegment::new(SegmentType::DecoStop, deco_stop_1_depth, deco_stop_1_depth,
@@ -96,6 +93,10 @@ fn main() {
 
     let deco_stop_1_segment = dive.add_bottom_time(&deco_stop_1, &trimix_18_45);
     pretty_print_segment_deco(deco_stop_1_depth, deco_stop_1_time, &trimix_18_45, &deco_stop_1_segment);
+
+    let mut deco_stop_1_otu = deco_stop_1_segment.unwrap().clone();
+    deco_stop_1_otu.push(deco_stop_1.clone());
+    otus += calculate_otu(&deco_stop_1_otu, &trimix_18_45);
 
     let deco_stop_2_depth = 9;
     let deco_stop_2_time = 26;
@@ -106,8 +107,14 @@ fn main() {
     let deco_stop_2_segment = dive.add_bottom_time(&deco_stop_2, &half_o2);
     pretty_print_segment_deco(deco_stop_2_depth, deco_stop_2_time, &half_o2, &deco_stop_2_segment);
 
+    let mut deco_stop_2_otu = deco_stop_2_segment.unwrap().clone();
+    deco_stop_2_otu.push(deco_stop_2.clone());
+    otus += calculate_otu(&deco_stop_2_otu, &half_o2);
+
     let final_deco = dive.get_stops(ascent_rate, descent_rate, &pure_o2);
     pretty_print_deco_stops(&final_deco, &pure_o2);
 
-    //println!("{:?}", all_segments);
+    otus += calculate_otu(&final_deco, &pure_o2);
+
+    println!("-----\nOTU total: {}", otus.round())
 }

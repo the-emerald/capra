@@ -1,30 +1,30 @@
 use crate::common;
-use std::f32::consts::{LN_2, E};
+use std::f64::consts::{LN_2, E};
 use crate::common::dive_segment::{DiveSegment, SegmentType};
 
 pub mod util;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ZHL16 {
-    p_n2: [f32; 16],
-    p_he: [f32; 16],
-    p_t: [f32; 16],
+    p_n2: [f64; 16],
+    p_he: [f64; 16],
+    p_t: [f64; 16],
     diver_depth: usize,
-    n2_a: [f32; 16],
-    n2_b: [f32; 16],
-    n2_hl: [f32; 16],
-    he_a: [f32; 16],
-    he_b: [f32; 16],
-    he_hl: [f32; 16],
+    n2_a: [f64; 16],
+    n2_b: [f64; 16],
+    n2_hl: [f64; 16],
+    he_a: [f64; 16],
+    he_b: [f64; 16],
+    he_hl: [f64; 16],
 
     first_deco_depth: Option<usize>,
-    gf_low: f32,
-    gf_high: f32,
+    gf_low: f64,
+    gf_high: f64,
 }
 
 impl ZHL16 {
-    pub fn new(tissue_gas: &common::gas::Gas, n2_a: [f32; 16], n2_b: [f32; 16], n2_hl: [f32; 16],
-    he_a: [f32;16], he_b: [f32;16], he_hl: [f32;16], gf_low: usize, gf_high: usize) -> Self {
+    pub fn new(tissue_gas: &common::gas::Gas, n2_a: [f64; 16], n2_b: [f64; 16], n2_hl: [f64; 16],
+    he_a: [f64;16], he_b: [f64;16], he_hl: [f64;16], gf_low: usize, gf_high: usize) -> Self {
         let adjusted_fr_n2 = tissue_gas.fr_n2() * (1.0 - util::ZHL16_WATER_VAPOUR_PRESSURE);
         let adjusted_fr_he;
         if tissue_gas.fr_he() >= util::ZHL16_WATER_VAPOUR_PRESSURE {
@@ -47,8 +47,8 @@ impl ZHL16 {
             he_hl,
 
             first_deco_depth: None,
-            gf_low: gf_low as f32/100.0,
-            gf_high: gf_high as f32/100.0,
+            gf_low: gf_low as f64/100.0,
+            gf_high: gf_high as f64/100.0,
         }
     }
 
@@ -59,12 +59,12 @@ impl ZHL16 {
         }
     }
 
-    fn gf_at_depth(&self, depth: usize) -> f32 {
+    fn gf_at_depth(&self, depth: usize) -> f64 {
         match self.first_deco_depth {
             Some(t) => {
                 if depth > 0 {
                     return self.gf_high + ((self.gf_high - self.gf_low) /
-                        (0.0 - t as f32)) * (depth as f32)
+                        (0.0 - t as f64)) * (depth as f64)
                 }
                 self.gf_high // We must be on the surface, by definition use gf_high
             }
@@ -82,22 +82,22 @@ impl ZHL16 {
             rate = segment.get_ascent_rate()
         }
 
-        let t: f32 = delta_depth as f32 / rate as f32;
+        let t: f64 = delta_depth as f64 / rate as f64;
         for x in 0..16 {
             let po = self.p_n2[x];
-            let pio: f32 = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_n2();
-            let r = (rate as f32 / 10.0) * gas.fr_n2();
+            let pio: f64 = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_n2();
+            let r = (rate as f64 / 10.0) * gas.fr_n2();
             let k = LN_2 / self.n2_hl[x];
-            let pn: f32 = ZHL16::depth_change_loading(t, po, pio, r, k);
+            let pn: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
             self.p_n2[x] = pn;
             self.p_t[x] = pn;
         }
         for x in 0..16 {
             let po = self.p_he[x];
-            let pio: f32 = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_he();
-            let r = (rate as f32 / 10.0) * gas.fr_he();
+            let pio: f64 = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_he();
+            let r = (rate as f64 / 10.0) * gas.fr_he();
             let k = LN_2 / self.he_hl[x];
-            let ph: f32 = ZHL16::depth_change_loading(t, po, pio, r, k);
+            let ph: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
             self.p_he[x] = ph;
             self.p_t[x] += ph;
         }
@@ -105,13 +105,13 @@ impl ZHL16 {
         //self.update_max_depth(segment.get_depth());
     }
 
-    fn compensated_pressure(depth: usize) -> f32 {
-        (common::mtr_bar(depth as f32) -
+    fn compensated_pressure(depth: usize) -> f64 {
+        (common::mtr_bar(depth as f64) -
             util::ZHL16_WATER_VAPOUR_PRESSURE)
     }
 
-    fn depth_change_loading(time: f32, initial_pressure: f32, initial_ambient_pressure: f32,
-                            r: f32, k: f32) -> f32 {
+    fn depth_change_loading(time: f64, initial_pressure: f64, initial_ambient_pressure: f64,
+                            r: f64, k: f64) -> f64 {
         initial_ambient_pressure + r * (time - (1.0 / k)) -
             (initial_ambient_pressure - initial_pressure - (r / k)) * E.powf(-1.0 * k * time)
     }
@@ -121,7 +121,7 @@ impl ZHL16 {
             let po = self.p_n2[x];
             let pi = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_n2();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / self.n2_hl[x])));
+                (1.0 - (2.0_f64.powf(-1.0*segment.get_time() as f64 / self.n2_hl[x])));
             self.p_n2[x] = p;
             self.p_t[x] = p;
         }
@@ -129,7 +129,7 @@ impl ZHL16 {
             let po = self.p_he[x];
             let pi = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_he();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f32.powf(-1.0*segment.get_time() as f32 / self.he_hl[x])));
+                (1.0 - (2.0_f64.powf(-1.0*segment.get_time() as f64 / self.he_hl[x])));
             self.p_he[x] = p;
             self.p_t[x] += p;
         }
@@ -137,8 +137,8 @@ impl ZHL16 {
         //self.update_max_depth(segment.get_depth());
     }
 
-    pub(crate) fn find_ascent_ceiling(&self, gf_override: Option<f32>) -> f32 {
-        let mut ceilings: [f32; 16] = [0.0; 16];
+    pub(crate) fn find_ascent_ceiling(&self, gf_override: Option<f64>) -> f64 {
+        let mut ceilings: [f64; 16] = [0.0; 16];
         let gf;
         match gf_override {
             Some(t) => gf = t,
@@ -155,19 +155,19 @@ impl ZHL16 {
             let b = self.tissue_b_value(x);
             ceilings[x] = self.tissue_ceiling(gf, x, a, b);
         }
-        ceilings.iter().cloned().fold(0./0., f32::max)
+        ceilings.iter().cloned().fold(0./0., f64::max)
     }
 
-    fn tissue_ceiling(&self, gf: f32, x: usize, a: f32, b: f32) -> f32 {
+    fn tissue_ceiling(&self, gf: f64, x: usize, a: f64, b: f64) -> f64 {
         ((self.p_n2[x] + self.p_he[x]) - (a * gf)) / (gf / b + 1.0 - gf)
     }
 
-    fn tissue_b_value(&self, x: usize) -> f32 {
+    fn tissue_b_value(&self, x: usize) -> f64 {
         (self.n2_b[x] * self.p_n2[x] + self.he_b[x] * self.p_he[x]) /
             (self.p_n2[x] + self.p_he[x])
     }
 
-    fn tissue_a_value(&self, x: usize) -> f32 {
+    fn tissue_a_value(&self, x: usize) -> f64 {
         (self.n2_a[x] * self.p_n2[x] + self.he_a[x] * self.p_he[x]) /
             (self.p_n2[x] + self.p_he[x])
     }
@@ -187,7 +187,7 @@ impl ZHL16 {
             virtual_zhl16.add_depth_change(&segment, gas);
             virtual_zhl16.add_bottom(&segment, gas);
             virtual_zhl16.update_first_deco_depth(segment.get_end_depth());
-            in_limit = virtual_zhl16.find_ascent_ceiling(None) < common::mtr_bar(stop_depth as f32)
+            in_limit = virtual_zhl16.find_ascent_ceiling(None) < common::mtr_bar(stop_depth as f64)
                 - 0.3;
             stop_time += 1;
         }
