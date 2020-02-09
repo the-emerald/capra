@@ -5,13 +5,6 @@ use capra::common::dive_segment::{DiveSegment, SegmentType};
 use capra::common::gas::Gas;
 use capra::common::otu::calculate_otu;
 
-fn optional_update_segment<'a>(segments: &'a mut Vec<DiveSegment>, candidate: &Option<Vec<DiveSegment>>) -> &'a mut Vec<DiveSegment> {
-    match candidate {
-        Some(t) => segments.append(t.clone().as_mut()),
-        None => {}
-    }
-    segments
-}
 fn gas_string(gas: &Gas) -> String {
     format!("{}/{}", (gas.fr_o2()*100.0) as usize, (gas.fr_he()*100.0) as usize)
 }
@@ -51,7 +44,7 @@ fn pretty_print_segment_deco(depth: usize, time: usize, gas: &Gas,
 
 fn main() {
     let mut all_segments: Vec<DiveSegment> = Vec::new();
-    let mut otus: f32 = 0.0;
+    let mut otus: f64 = 0.0;
 
     let ean32 = common::gas::Gas::new(0.68, 0.32, 0.0).unwrap();
     let air = common::gas::Gas::new(0.79, 0.21, 0.0).unwrap();
@@ -123,5 +116,5 @@ fn main() {
 
     otus += calculate_otu(&final_deco, &pure_o2);
 
-    println!("-----\nOTU total: {}", otus)
+    println!("-----\nOTU total: {}", otus.round())
 }

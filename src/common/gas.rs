@@ -18,13 +18,13 @@ impl std::fmt::Display for GasError {
 
 #[derive(Debug)]
 pub struct Gas {
-    fr_n2: f32,
-    fr_o2: f32,
-    fr_he: f32
+    fr_n2: f64,
+    fr_o2: f64,
+    fr_he: f64
 }
 
 impl Gas {
-    pub fn new(fr_n2: f32, fr_o2: f32, fr_he: f32) -> Result<Self, GasError> {
+    pub fn new(fr_n2: f64, fr_o2: f64, fr_he: f64) -> Result<Self, GasError> {
         if fr_n2 + fr_o2 + fr_he != 1.0 {
             return Err(GasError::FractionError)
         }
@@ -35,19 +35,19 @@ impl Gas {
         })
     }
 
-    pub fn fr_n2(&self) -> f32 {
+    pub fn fr_n2(&self) -> f64 {
         self.fr_n2
     }
 
-    pub fn fr_o2(&self) -> f32 {
+    pub fn fr_o2(&self) -> f64 {
         self.fr_o2
     }
 
-    pub fn fr_he(&self) -> f32 {
+    pub fn fr_he(&self) -> f64 {
         self.fr_he
     }
 }
 
-pub fn partial_pressure(depth: usize, fr: f32) -> f32 {
-    mtr_bar(depth as f32) * fr
+pub fn partial_pressure(depth: usize, fr: f64) -> f64 {
+    mtr_bar(depth as f64) * fr
 }

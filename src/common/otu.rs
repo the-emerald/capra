@@ -1,7 +1,7 @@
 use crate::common::dive_segment::{DiveSegment, SegmentType};
 use crate::common::gas::{Gas, partial_pressure};
 
-pub fn calculate_otu(segments: &Vec<DiveSegment>, gas: &Gas) -> f32 {
+pub fn calculate_otu(segments: &Vec<DiveSegment>, gas: &Gas) -> f64 {
     let mut otu= 0.0;
     for segment in segments {
         //println!("{:?}", segment);
@@ -25,11 +25,11 @@ pub fn calculate_otu(segments: &Vec<DiveSegment>, gas: &Gas) -> f32 {
     otu
 }
 
-fn constant_depth(time: usize, p_o2: f32) -> f32 {
-    (time as f32) * (0.5 / (p_o2 - 0.5)).powf(-5.0/6.0)
+fn constant_depth(time: usize, p_o2: f64) -> f64 {
+    (time as f64) * (0.5 / (p_o2 - 0.5)).powf(-5.0/6.0)
 }
 
-fn ascent_descent_constant(time: usize, p_o2i: f32, p_o2f: f32) -> f32 {
-    ((3.0 / 11.0) * (time as f32) / (p_o2f - p_o2i)) * (((p_o2f - 0.5) / 0.5).powf(11.0 / 6.0)
+fn ascent_descent_constant(time: usize, p_o2i: f64, p_o2f: f64) -> f64 {
+    ((3.0 / 11.0) * (time as f64) / (p_o2f - p_o2i)) * (((p_o2f - 0.5) / 0.5).powf(11.0 / 6.0)
         - ((p_o2i - 0.5) / 0.5).powf(11.0 / 6.0))
 }
