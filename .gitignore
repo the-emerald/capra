@@ -1,3 +1,5 @@
 /target
+capra-demo/target
+
 **/*.rs.bk
 Cargo.lock
