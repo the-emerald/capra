@@ -16,7 +16,7 @@ impl std::fmt::Display for GasError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Gas {
     fr_n2: f64,
     fr_o2: f64,
