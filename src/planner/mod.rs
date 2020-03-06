@@ -82,14 +82,19 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
         None => {}
     }
     let mut virtual_deco = deco.clone();
+//    println!("------------");
+//    println!("end_segment: {:?} start_segment: {:?}", end_segment, start_segment);
+//    println!("{:?}", stops_performed);
     let intermediate_stops = match end_segment {
         Some(t) => virtual_deco.add_bottom_time(t, start_gas), // More stops: add the next bottom.
         None => { // Next "stop" is a surface:
-            virtual_deco.add_bottom_time(start_segment, start_gas);
+            let zero_segment = DiveSegment::new(SegmentType::DiveSegment,
+                                                start_segment.get_start_depth(), start_segment.get_end_depth(),
+                                                0, -10, 20).unwrap();
+            virtual_deco.add_bottom_time(&zero_segment, start_gas);
             let s = virtual_deco.get_stops(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas);
             match s[0].get_segment_type() {
                 SegmentType::NoDeco => {
-//                    stops_performed.push((s[0], *start_gas)); // Add the No Deco stop
                     return virtual_deco
                 },
                 _ => Some(s)
@@ -98,6 +103,7 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
     };
     match intermediate_stops {
         Some(t) => { // There are deco stops to perform.
+//            println!("t: {:?}", t);
             let switch = determine_gas_switch(&t, start_gas, &gases);
             match switch {
                 Some(u) => { // There are gas switches to perform. u = target stop
@@ -118,20 +124,23 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
                     let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                         u.0.get_start_depth(), u.0.get_end_depth(),
                                                         0, -10, 20).unwrap();
-                    new_stop_time_deco.add_bottom_time(&test_segment, u.1); // Add a zero-minute stop
+                    new_stop_time_deco.add_bottom_time(&test_segment, start_gas); // Add a zero-minute stop
+
                     let new_stops = new_stop_time_deco.get_stops(-10, 20, u.1); // Use next gas on the stops
-                    let u2 = DiveSegment::new(SegmentType::DecoStop,
+//                    println!("{:?}", new_stops);
+                    let u2 = DiveSegment::new(SegmentType::DecoStop, // TODO: Replace me with a DecoStop!
                                               u.0.get_start_depth(), u.0.get_end_depth(),
                                               new_stops[1].get_time(), -10, 20).unwrap(); // Use the second segment (first is AscDesc)
 
-                    new_stop_time_deco.add_bottom_time(&test_segment, u.1);
                     virtual_deco.add_bottom_time(&u2, u.1); // Add u with gas switch.1
                     stops_performed.push((u2, *u.1));
                     // Recursively call level_to_level with the new start segment as u
-                    level_to_level(virtual_deco, &u.0, end_segment, u.1, gases, stops_performed)
+                    level_to_level(virtual_deco, &u2, end_segment, u.1, gases, stops_performed)
                 }
                 None => { // There are deco stops to perform but no gas switches necessary.
+//                    println!("Deco stops, no switches");
                     for x in t {
+//                        println!("{:?}", x);
                         stops_performed.push((x, *start_gas));
                     }
                     return virtual_deco
@@ -147,7 +156,6 @@ pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(mut deco: T, bottom_se
 
     let mut total_segs: Vec<(DiveSegment, Gas)> = Vec::new();
     deco.add_bottom_time(&bottom_segments[0].0, &bottom_segments[0].1);
-
     if bottom_segments.len() != 1 { // If this is a multi-level dive then use a sliding window.
         let windowed_segments = bottom_segments.windows(2);
         for win in windowed_segments {
@@ -161,9 +169,10 @@ pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(mut deco: T, bottom_se
     }
     // However the sliding window does not capture the final element. Convenient!
     let final_stop = bottom_segments.last().unwrap();
+    total_segs.push(*final_stop);
+
     let mut stops_performed: Vec<(DiveSegment, Gas)> = Vec::new();
     level_to_level(deco, &final_stop.0, None, &final_stop.1, deco_gases, &mut stops_performed);
-    total_segs.push(*final_stop);
     total_segs.append(&mut stops_performed);
 
     return total_segs
