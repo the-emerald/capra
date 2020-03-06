@@ -66,7 +66,7 @@ fn determine_gas_switch<'a>(segments: &Vec<DiveSegment>, current_gas: &Gas, gase
 // - a = b
 // - go to start of level
 
-fn level_to_level<T: DecoAlgorithm + Copy + Clone>(deco: T, start_segment: &DiveSegment,
+fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segment: &DiveSegment,
                                                    end_segment: Option<&DiveSegment>,
                                                    start_gas: &Gas,
                                                    gases: &Vec<(Gas, Option<usize>)>,
@@ -89,7 +89,7 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone>(deco: T, start_segment: &Dive
             let s = virtual_deco.get_stops(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas);
             match s[0].get_segment_type() {
                 SegmentType::NoDeco => {
-                    stops_performed.push((s[0], *start_gas)); // Add the No Deco stop
+//                    stops_performed.push((s[0], *start_gas)); // Add the No Deco stop
                     return virtual_deco
                 },
                 _ => Some(s)
@@ -112,8 +112,21 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone>(deco: T, start_segment: &Dive
                         virtual_deco.add_bottom_time(&i, start_gas);
                         stops_performed.push((i, *start_gas));
                     }
-                    virtual_deco.add_bottom_time(&u.0, u.1); // Add u with gas switch.1
-                    stops_performed.push((u.0, *u.1));
+
+                    let mut new_stop_time_deco = virtual_deco.clone(); // Calculate the new stop time
+                    // TODO: Fix hard coded asc/desc times
+                    let test_segment = DiveSegment::new(SegmentType::DiveSegment,
+                                                        u.0.get_start_depth(), u.0.get_end_depth(),
+                                                        0, -10, 20).unwrap();
+                    new_stop_time_deco.add_bottom_time(&test_segment, u.1); // Add a zero-minute stop
+                    let new_stops = new_stop_time_deco.get_stops(-10, 20, u.1); // Use next gas on the stops
+                    let u2 = DiveSegment::new(SegmentType::DecoStop,
+                                              u.0.get_start_depth(), u.0.get_end_depth(),
+                                              new_stops[1].get_time(), -10, 20).unwrap(); // Use the second segment (first is AscDesc)
+
+                    new_stop_time_deco.add_bottom_time(&test_segment, u.1);
+                    virtual_deco.add_bottom_time(&u2, u.1); // Add u with gas switch.1
+                    stops_performed.push((u2, *u.1));
                     // Recursively call level_to_level with the new start segment as u
                     level_to_level(virtual_deco, &u.0, end_segment, u.1, gases, stops_performed)
                 }
