@@ -83,16 +83,22 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
     }
     let mut virtual_deco = deco.clone();
 //    println!("------------");
-//    println!("end_segment: {:?} start_segment: {:?}", end_segment, start_segment);
-//    println!("{:?}", stops_performed);
+//    println!("start: {:?} end: {:?}\n", start_segment, end_segment);
+//    println!("Stops performed: {:?}\n", stops_performed);
+
+//    virtual_deco.add_bottom_time(&start_segment, start_gas);
+//    println!("Added in top: {:?}\n", start_segment);
+//    println!("DADND: {:?}\n", virtual_deco.get_stops(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas));
     let intermediate_stops = match end_segment {
-        Some(t) => virtual_deco.add_bottom_time(t, start_gas), // More stops: add the next bottom.
+        Some(t) => {
+//            println!("Added in ist: {:?}\n", t);
+//            stops_performed.push((*t, *start_gas));
+            let zero_to_t_segment = DiveSegment::new(SegmentType::AscDesc, t.get_start_depth(), t.get_end_depth(), 0, -10, 20).unwrap();
+            virtual_deco.add_bottom_time(&zero_to_t_segment, start_gas)
+        }, // More stops: add the next bottom.
         None => { // Next "stop" is a surface:
-            let zero_segment = DiveSegment::new(SegmentType::DiveSegment,
-                                                start_segment.get_start_depth(), start_segment.get_end_depth(),
-                                                0, -10, 20).unwrap();
-            virtual_deco.add_bottom_time(&zero_segment, start_gas);
             let s = virtual_deco.get_stops(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas);
+//            println!("No end segment: {:?}\n", s);zero_to_t_segment
             match s[0].get_segment_type() {
                 SegmentType::NoDeco => {
                     return virtual_deco
@@ -101,6 +107,7 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
             }
         }
     };
+//    println!("istops: {:?}", intermediate_stops);
     match intermediate_stops {
         Some(t) => { // There are deco stops to perform.
 //            println!("t: {:?}", t);
@@ -116,6 +123,7 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
                             break;
                         }
                         virtual_deco.add_bottom_time(&i, start_gas);
+//                        println!("Added in u: {:?}", i);
                         stops_performed.push((i, *start_gas));
                     }
 
@@ -127,27 +135,34 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
                     new_stop_time_deco.add_bottom_time(&test_segment, start_gas); // Add a zero-minute stop
 
                     let new_stops = new_stop_time_deco.get_stops(-10, 20, u.1); // Use next gas on the stops
-//                    println!("{:?}", new_stops);
+//                    println!("New stops: {:?}\n", new_stops);
                     let u2 = DiveSegment::new(SegmentType::DecoStop, // TODO: Replace me with a DecoStop!
                                               u.0.get_start_depth(), u.0.get_end_depth(),
                                               new_stops[1].get_time(), -10, 20).unwrap(); // Use the second segment (first is AscDesc)
 
-                    virtual_deco.add_bottom_time(&u2, u.1); // Add u with gas switch.1
-                    stops_performed.push((u2, *u.1));
-                    // Recursively call level_to_level with the new start segment as u
-                    level_to_level(virtual_deco, &u2, end_segment, u.1, gases, stops_performed)
+//                    println!("Next call is recursive!");
+                    // We do not push any stops or add bottom time here because function will do so already.
+                    level_to_level(virtual_deco, &u2, end_segment,
+                                   u.1, gases, stops_performed) // Recursively call level_to_level with the new start segment as u
                 }
                 None => { // There are deco stops to perform but no gas switches necessary.
 //                    println!("Deco stops, no switches");
+//                    println!("{:?}\n", t);
                     for x in t {
-//                        println!("{:?}", x);
                         stops_performed.push((x, *start_gas));
                     }
                     return virtual_deco
                 }
             }
         }
-        None => return deco // There are no deco stops to perform.
+        None => {
+//            println!("None outer");
+//            let zero_segment = DiveSegment::new(SegmentType::AscDesc, end_segment.unwrap().get_start_depth(), end_segment.unwrap().get_end_depth(), 0, -10, 20).unwrap();
+//            let mut return_deco = deco.clone();
+//            return_deco.add_bottom_time(&zero_segment, start_gas);
+//            return return_deco;
+            return virtual_deco
+        } // There are no deco stops to perform.
     }
 }
 
@@ -155,22 +170,25 @@ pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(mut deco: T, bottom_se
                                    deco_gases: &Vec<(Gas, Option<usize>)>) -> Vec<(DiveSegment, Gas)> {
 
     let mut total_segs: Vec<(DiveSegment, Gas)> = Vec::new();
-    deco.add_bottom_time(&bottom_segments[0].0, &bottom_segments[0].1);
     if bottom_segments.len() != 1 { // If this is a multi-level dive then use a sliding window.
         let windowed_segments = bottom_segments.windows(2);
         for win in windowed_segments {
             let mut stops_performed: Vec<(DiveSegment, Gas)> = Vec::new();
             let start = win[0];
             let end = win[1];
-            deco = level_to_level(deco, &start.0, Some(&end.0), &start.1, deco_gases, &mut stops_performed);
+            deco.add_bottom_time(&start.0, &start.1);
             total_segs.push(start);
+
+            deco = level_to_level(deco, &start.0, Some(&end.0), &start.1, deco_gases, &mut stops_performed);
             total_segs.append(&mut stops_performed);
         }
     }
     // However the sliding window does not capture the final element. Convenient!
     let final_stop = bottom_segments.last().unwrap();
+    deco.add_bottom_time(&final_stop.0, &final_stop.1);
     total_segs.push(*final_stop);
-
+//    println!("Segments before final: {:?}\n", total_segs);
+//    println!("Outside deco now!{:?}\n", deco.get_stops(final_stop.0.get_ascent_rate(), final_stop.0.get_descent_rate(), &final_stop.1));
     let mut stops_performed: Vec<(DiveSegment, Gas)> = Vec::new();
     level_to_level(deco, &final_stop.0, None, &final_stop.1, deco_gases, &mut stops_performed);
     total_segs.append(&mut stops_performed);
