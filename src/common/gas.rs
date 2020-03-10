@@ -25,7 +25,8 @@ pub struct Gas {
 
 impl Gas {
     pub fn new(fr_n2: f64, fr_o2: f64, fr_he: f64) -> Result<Self, GasError> {
-        if fr_n2 + fr_o2 + fr_he != 1.0 {
+        if fr_n2 + fr_o2 + fr_he != 1.0 || !valid_pp(fr_n2) || !valid_pp(fr_o2) ||
+            !valid_pp(fr_he){
             return Err(GasError::FractionError)
         }
         Ok(Self {
@@ -50,4 +51,8 @@ impl Gas {
 
 pub fn partial_pressure(depth: usize, fr: f64) -> f64 {
     mtr_bar(depth as f64) * fr
+}
+
+fn valid_pp(pp: f64) -> bool {
+    pp >= 0.0 && pp <= 1.0
 }
