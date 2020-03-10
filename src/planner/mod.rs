@@ -70,7 +70,8 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
                                                    end_segment: Option<&DiveSegment>,
                                                    start_gas: &Gas,
                                                    gases: &Vec<(Gas, Option<usize>)>,
-                                                   stops_performed: &mut Vec<(DiveSegment, Gas)>) -> T {
+                                                   stops_performed: &mut Vec<(DiveSegment, Gas)>,
+                                                   ascent_rate: isize, descent_rate: isize) -> T {
     // Returns the deco model AFTER operations are done.
 
     match end_segment {
@@ -84,7 +85,9 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
     let mut virtual_deco = deco.clone();
     let intermediate_stops = match end_segment {
         Some(t) => {
-            let zero_to_t_segment = DiveSegment::new(SegmentType::AscDesc, t.get_start_depth(), t.get_end_depth(), 0, -10, 20).unwrap();
+            let zero_to_t_segment = DiveSegment::new(SegmentType::AscDesc,
+                                                     t.get_start_depth(), t.get_end_depth(),
+                                                     0, ascent_rate, descent_rate).unwrap();
             virtual_deco.add_bottom_time(&zero_to_t_segment, start_gas)
         }, // More stops: add the next bottom.
         None => { // Next "stop" is a surface:
@@ -115,20 +118,19 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
                     }
 
                     let mut new_stop_time_deco = virtual_deco.clone(); // Calculate the new stop time
-                    // TODO: Fix hard coded asc/desc times
                     let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                         u.0.get_start_depth(), u.0.get_end_depth(),
-                                                        0, -10, 20).unwrap();
+                                                        0, -ascent_rate, descent_rate).unwrap();
                     new_stop_time_deco.add_bottom_time(&test_segment, start_gas); // Add a zero-minute stop
 
-                    let new_stops = new_stop_time_deco.get_stops(-10, 20, u.1); // Use next gas on the stops
+                    let new_stops = new_stop_time_deco.get_stops(ascent_rate, descent_rate, u.1); // Use next gas on the stops
                     let u2 = DiveSegment::new(SegmentType::DecoStop,
                                               u.0.get_start_depth(), u.0.get_end_depth(),
-                                              new_stops[1].get_time(), -10, 20).unwrap(); // Use the second segment (first is AscDesc)
+                                              new_stops[1].get_time(), ascent_rate, descent_rate).unwrap(); // Use the second segment (first is AscDesc)
 
                     // We do not push any stops or add bottom time here because function will do so already.
                     level_to_level(virtual_deco, &u2, end_segment,
-                                   u.1, gases, stops_performed) // Recursively call level_to_level with the new start segment as u
+                                   u.1, gases, stops_performed, ascent_rate, descent_rate) // Recursively call level_to_level with the new start segment as u
                 }
                 None => { // There are deco stops to perform but no gas switches necessary.
                     for x in t {
@@ -145,7 +147,7 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
 }
 
 pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(mut deco: T, bottom_segments: &Vec<(DiveSegment, Gas)>,
-                                   deco_gases: &Vec<(Gas, Option<usize>)>) -> Vec<(DiveSegment, Gas)> {
+                                   deco_gases: &Vec<(Gas, Option<usize>)>, ascent_rate: isize, descent_rate: isize) -> Vec<(DiveSegment, Gas)> {
 
     let mut total_segs: Vec<(DiveSegment, Gas)> = Vec::new();
     if bottom_segments.len() != 1 { // If this is a multi-level dive then use a sliding window.
@@ -157,7 +159,7 @@ pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(mut deco: T, bottom_se
             deco.add_bottom_time(&start.0, &start.1);
             total_segs.push(start);
 
-            deco = level_to_level(deco, &start.0, Some(&end.0), &start.1, deco_gases, &mut stops_performed);
+            deco = level_to_level(deco, &start.0, Some(&end.0), &start.1, deco_gases, &mut stops_performed, ascent_rate, descent_rate);
             total_segs.append(&mut stops_performed);
         }
     }
@@ -166,7 +168,7 @@ pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(mut deco: T, bottom_se
     deco.add_bottom_time(&final_stop.0, &final_stop.1);
     total_segs.push(*final_stop);
     let mut stops_performed: Vec<(DiveSegment, Gas)> = Vec::new();
-    level_to_level(deco, &final_stop.0, None, &final_stop.1, deco_gases, &mut stops_performed);
+    level_to_level(deco, &final_stop.0, None, &final_stop.1, deco_gases, &mut stops_performed, ascent_rate, descent_rate);
     total_segs.append(&mut stops_performed);
 
     return total_segs
