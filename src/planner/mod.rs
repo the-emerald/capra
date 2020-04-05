@@ -57,31 +57,22 @@ fn determine_gas_switch<'a>(segments: &[DiveSegment], current_gas: &Gas, gases: 
     None
 }
 
-// Start at a level (gas = a)
-// Calculate all stops
-// If there are stops where gas switch is required
-// - Rewind to beginning of level
-// - Add stops until the gas switch with gas=a
-// - Add the switch stop with gas=b
-// - a = b
-// - go to start of level
-
 fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: &mut T, start_segment: &DiveSegment,
-                                                               end_segment: Option<&DiveSegment>,
-                                                               start_gas: &Gas,
-                                                               gases: &[(Gas, Option<usize>)],
-                                                               stops_performed: &mut Vec<(DiveSegment, Gas)>,
-                                                               ascent_rate: isize, descent_rate: isize) {
+                                                            end_segment: Option<&DiveSegment>,
+                                                            start_gas: &Gas,
+                                                            gases: &[(Gas, Option<usize>)],
+                                                            stops_performed: &mut Vec<(DiveSegment, Gas)>,
+                                                            ascent_rate: isize, descent_rate: isize) {
     // Returns the deco model AFTER operations are done.
 
     if let Some(t) = end_segment {
-        if start_segment.get_end_depth() == t.get_end_depth() {
+        if start_segment.get_end_depth() == t.get_end_depth() { // Check if there is a depth change
             return;
         }
     }
 
     let mut virtual_deco = *deco;
-    let intermediate_stops = match end_segment {
+    let intermediate_stops = match end_segment { // Check if there are intermediate stops
         Some(t) => {
             let zero_to_t_segment = DiveSegment::new(SegmentType::AscDesc,
                                                      t.get_start_depth(), t.get_end_depth(),
@@ -142,7 +133,7 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: &mut T, start_s
 }
 
 pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(deco: &mut T, bottom_segments: &[(DiveSegment, Gas)],
-                                   deco_gases: &[(Gas, Option<usize>)], ascent_rate: isize, descent_rate: isize) -> Vec<(DiveSegment, Gas)> {
+                                                          deco_gases: &[(Gas, Option<usize>)], ascent_rate: isize, descent_rate: isize) -> Vec<(DiveSegment, Gas)> {
 
     let mut total_segs: Vec<(DiveSegment, Gas)> = Vec::new();
     if bottom_segments.len() != 1 { // If this is a multi-level dive then use a sliding window.
@@ -158,6 +149,7 @@ pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(deco: &mut T, bottom_s
             total_segs.append(&mut stops_performed);
         }
     }
+
     // However the sliding window does not capture the final element. Convenient!
     let final_stop = bottom_segments.last().unwrap();
     deco.add_bottom_time(&final_stop.0, &final_stop.1);
