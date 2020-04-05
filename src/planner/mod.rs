@@ -66,21 +66,21 @@ fn determine_gas_switch<'a>(segments: &[DiveSegment], current_gas: &Gas, gases: 
 // - a = b
 // - go to start of level
 
-fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segment: &DiveSegment,
-                                                   end_segment: Option<&DiveSegment>,
-                                                   start_gas: &Gas,
-                                                   gases: &[(Gas, Option<usize>)],
-                                                   stops_performed: &mut Vec<(DiveSegment, Gas)>,
-                                                   ascent_rate: isize, descent_rate: isize) -> T {
+fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: &mut T, start_segment: &DiveSegment,
+                                                               end_segment: Option<&DiveSegment>,
+                                                               start_gas: &Gas,
+                                                               gases: &[(Gas, Option<usize>)],
+                                                               stops_performed: &mut Vec<(DiveSegment, Gas)>,
+                                                               ascent_rate: isize, descent_rate: isize) {
     // Returns the deco model AFTER operations are done.
 
     if let Some(t) = end_segment {
         if start_segment.get_end_depth() == t.get_end_depth() {
-            return deco;
+            return;
         }
     }
 
-    let mut virtual_deco = deco;
+    let mut virtual_deco = *deco;
     let intermediate_stops = match end_segment {
         Some(t) => {
             let zero_to_t_segment = DiveSegment::new(SegmentType::AscDesc,
@@ -92,7 +92,7 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
             let s = virtual_deco.get_stops(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas);
             match s[0].get_segment_type() {
                 SegmentType::NoDeco => {
-                    return virtual_deco
+                    return;
                 },
                 _ => Some(s)
             }
@@ -103,7 +103,7 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
             let switch = determine_gas_switch(&t, start_gas, gases);
             match switch {
                 Some(u) => { // There are gas switches to perform. u = target stop
-                    virtual_deco = deco; // Rewind to beginning of level
+                    virtual_deco = *deco; // Rewind to beginning of level
                     for i in t {
                         if i.get_segment_type() == SegmentType::AscDesc {
                             continue;
@@ -127,24 +127,21 @@ fn level_to_level<T: DecoAlgorithm + Copy + Clone + Debug>(deco: T, start_segmen
                                               new_stops[1].get_time(), ascent_rate, descent_rate).unwrap(); // Use the second segment (first is AscDesc)
 
                     // We do not push any stops or add bottom time here because function will do so already.
-                    level_to_level(virtual_deco, &u2, end_segment,
+                    level_to_level(&mut virtual_deco, &u2, end_segment,
                                    u.1, gases, stops_performed, ascent_rate, descent_rate) // Recursively call level_to_level with the new start segment as u
                 }
                 None => { // There are deco stops to perform but no gas switches necessary.
                     for x in t {
                         stops_performed.push((x, *start_gas));
                     }
-                    virtual_deco
                 }
             }
         }
-        None => {
-            virtual_deco
-        } // There are no deco stops to perform.
+        None => {} // There are no deco stops to perform.
     }
 }
 
-pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(mut deco: T, bottom_segments: &[(DiveSegment, Gas)],
+pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(deco: &mut T, bottom_segments: &[(DiveSegment, Gas)],
                                    deco_gases: &[(Gas, Option<usize>)], ascent_rate: isize, descent_rate: isize) -> Vec<(DiveSegment, Gas)> {
 
     let mut total_segs: Vec<(DiveSegment, Gas)> = Vec::new();
@@ -157,7 +154,7 @@ pub fn plan_dive<T: DecoAlgorithm + Copy + Clone + Debug>(mut deco: T, bottom_se
             deco.add_bottom_time(&start.0, &start.1);
             total_segs.push(start);
 
-            deco = level_to_level(deco, &start.0, Some(&end.0), &start.1, deco_gases, &mut stops_performed, ascent_rate, descent_rate);
+            level_to_level(deco, &start.0, Some(&end.0), &start.1, deco_gases, &mut stops_performed, ascent_rate, descent_rate);
             total_segs.append(&mut stops_performed);
         }
     }
