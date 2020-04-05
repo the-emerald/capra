@@ -4,18 +4,20 @@ use crate::common::dive_segment::{DiveSegment, SegmentType};
 
 pub mod util;
 
+const TISSUE_COUNT: usize = 16;
+
 #[derive(Debug, Copy, Clone)]
 pub struct ZHL16 {
-    p_n2: [f64; 16],
-    p_he: [f64; 16],
-    p_t: [f64; 16],
+    p_n2: [f64; TISSUE_COUNT],
+    p_he: [f64; TISSUE_COUNT],
+    p_t: [f64; TISSUE_COUNT],
     diver_depth: usize,
-    n2_a: [f64; 16],
-    n2_b: [f64; 16],
-    n2_hl: [f64; 16],
-    he_a: [f64; 16],
-    he_b: [f64; 16],
-    he_hl: [f64; 16],
+    n2_a: [f64; TISSUE_COUNT],
+    n2_b: [f64; TISSUE_COUNT],
+    n2_hl: [f64; TISSUE_COUNT],
+    he_a: [f64; TISSUE_COUNT],
+    he_b: [f64; TISSUE_COUNT],
+    he_hl: [f64; TISSUE_COUNT],
 
     first_deco_depth: Option<usize>,
     gf_low: f64,
@@ -23,8 +25,10 @@ pub struct ZHL16 {
 }
 
 impl ZHL16 {
-    pub fn new(tissue_gas: &common::gas::Gas, n2_a: [f64; 16], n2_b: [f64; 16], n2_hl: [f64; 16],
-    he_a: [f64;16], he_b: [f64;16], he_hl: [f64;16], gf_low: usize, gf_high: usize) -> Self {
+    pub fn new(tissue_gas: &common::gas::Gas, n2_a: [f64; TISSUE_COUNT], n2_b: [f64; TISSUE_COUNT],
+               n2_hl: [f64; TISSUE_COUNT], he_a: [f64;TISSUE_COUNT], he_b: [f64;TISSUE_COUNT],
+               he_hl: [f64;TISSUE_COUNT], gf_low: usize, gf_high: usize) -> Self {
+
         let adjusted_fr_n2 = tissue_gas.fr_n2() * (1.0 - util::ZHL16_WATER_VAPOUR_PRESSURE);
         let adjusted_fr_he;
         if tissue_gas.fr_he() >= util::ZHL16_WATER_VAPOUR_PRESSURE {
@@ -35,9 +39,9 @@ impl ZHL16 {
         }
 
         Self {
-            p_n2: [adjusted_fr_n2; 16],
-            p_he: [adjusted_fr_he; 16],
-            p_t: [adjusted_fr_n2 + adjusted_fr_he; 16],
+            p_n2: [adjusted_fr_n2; TISSUE_COUNT],
+            p_he: [adjusted_fr_he; TISSUE_COUNT],
+            p_t: [adjusted_fr_n2 + adjusted_fr_he; TISSUE_COUNT],
             diver_depth: 0,
             n2_a,
             n2_b,
@@ -54,7 +58,7 @@ impl ZHL16 {
 
     fn update_first_deco_depth(&mut self, deco_depth: usize) {
         match self.first_deco_depth {
-            Some(_t) => return,
+            Some(_t) => {},
             None => self.first_deco_depth = Some(deco_depth)
         }
     }
@@ -83,31 +87,30 @@ impl ZHL16 {
         }
 
         let t: f64 = delta_depth as f64 / rate as f64;
-        for x in 0..16 {
-            let po = self.p_n2[x];
+        for (idx, val) in self.p_n2.iter_mut().enumerate() {
+            let po = *val;
             let pio: f64 = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_n2();
             let r = (rate as f64 / 10.0) * gas.fr_n2();
-            let k = LN_2 / self.n2_hl[x];
+            let k = LN_2 / self.n2_hl[idx];
             let pn: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
-            self.p_n2[x] = pn;
-            self.p_t[x] = pn;
+            *val = pn;
+            self.p_t[idx] = pn;
         }
-        for x in 0..16 {
-            let po = self.p_he[x];
+
+        for (idx, val) in self.p_he.iter_mut().enumerate() {
+            let po = *val;
             let pio: f64 = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_he();
             let r = (rate as f64 / 10.0) * gas.fr_he();
-            let k = LN_2 / self.he_hl[x];
+            let k = LN_2 / self.he_hl[idx];
             let ph: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
-            self.p_he[x] = ph;
-            self.p_t[x] += ph;
+            *val = ph;
+            self.p_t[idx] += ph;
         }
         self.diver_depth = segment.get_end_depth();
-        //self.update_max_depth(segment.get_depth());
     }
 
     fn compensated_pressure(depth: usize) -> f64 {
-        (common::mtr_bar(depth as f64) -
-            util::ZHL16_WATER_VAPOUR_PRESSURE)
+        common::mtr_bar(depth as f64) - util::ZHL16_WATER_VAPOUR_PRESSURE
     }
 
     fn depth_change_loading(time: f64, initial_pressure: f64, initial_ambient_pressure: f64,
@@ -117,28 +120,28 @@ impl ZHL16 {
     }
 
     pub(crate) fn add_bottom(&mut self, segment: &DiveSegment, gas: &common::gas::Gas) {
-        for x in 0..16 {
-            let po = self.p_n2[x];
+        for (idx, val) in self.p_n2.iter_mut().enumerate() {
+            let po = *val;
             let pi = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_n2();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f64.powf(-1.0*segment.get_time() as f64 / self.n2_hl[x])));
-            self.p_n2[x] = p;
-            self.p_t[x] = p;
+                (1.0 - (2.0_f64.powf(-1.0*segment.get_time() as f64 / self.n2_hl[idx])));
+            *val = p;
+            self.p_t[idx] = p;
         }
-        for x in 0..16 {
-            let po = self.p_he[x];
+
+        for (idx, val) in self.p_he.iter_mut().enumerate() {
+            let po = *val;
             let pi = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_he();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f64.powf(-1.0*segment.get_time() as f64 / self.he_hl[x])));
-            self.p_he[x] = p;
-            self.p_t[x] += p;
+                (1.0 - (2.0_f64.powf(-1.0*segment.get_time() as f64 / self.he_hl[idx])));
+            *val = p;
+            self.p_t[idx] += p;
         }
         self.diver_depth = segment.get_end_depth();
-        //self.update_max_depth(segment.get_depth());
     }
 
     pub(crate) fn find_ascent_ceiling(&self, gf_override: Option<f64>) -> f64 {
-        let mut ceilings: [f64; 16] = [0.0; 16];
+        let mut ceilings: [f64; TISSUE_COUNT] = [0.0; TISSUE_COUNT];
         let gf;
         match gf_override {
             Some(t) => gf = t,
@@ -150,12 +153,13 @@ impl ZHL16 {
             }
         }
 
-        for x in 0..16 {
-            let a = self.tissue_a_value(x);
-            let b = self.tissue_b_value(x);
-            ceilings[x] = self.tissue_ceiling(gf, x, a, b);
+        for (idx, val) in ceilings.iter_mut().enumerate() {
+            let a = self.tissue_a_value(idx);
+            let b = self.tissue_b_value(idx);
+            *val = self.tissue_ceiling(gf, idx, a, b)
         }
-        ceilings.iter().cloned().fold(0./0., f64::max)
+
+        ceilings.iter().cloned().fold(std::f64::NAN, f64::max)
     }
 
     fn tissue_ceiling(&self, gf: f64, x: usize, a: f64, b: f64) -> f64 {
@@ -180,7 +184,7 @@ impl ZHL16 {
         let mut stop_time: usize = 0;
         let mut in_limit: bool = false;
         while !in_limit {
-            let mut virtual_zhl16 = self.clone();
+            let mut virtual_zhl16 = *self;
             let segment = DiveSegment::new(SegmentType::DecoStop,
                                            stop_depth, stop_depth,
                                            stop_time, ascent_rate, descent_rate).unwrap();
@@ -199,7 +203,7 @@ impl ZHL16 {
         let mut ndl = 0;
         let mut in_ndl= true;
         while in_ndl {
-            let mut virtual_zhl16 = self.clone();
+            let mut virtual_zhl16 = *self;
             let virtual_segment = DiveSegment::new(SegmentType::NoDeco,
                                                    virtual_zhl16.diver_depth,
                                                    virtual_zhl16.diver_depth, ndl,
@@ -250,16 +254,14 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
     fn get_stops(&self, ascent_rate: isize, descent_rate: isize, gas: &common::gas::Gas)
         -> Vec<DiveSegment> {
         let mut stops: Vec<DiveSegment> = Vec::new();
-        let mut virtual_zhl16 = self.clone();
+        let mut virtual_zhl16 = *self;
 
         if virtual_zhl16.find_ascent_ceiling(Some(self.gf_high)) < 1.0 {
-            let _ndl = match virtual_zhl16.ndl(gas) {
+            match virtual_zhl16.ndl(gas) {
                 Some(t) => {
                     stops.push(t)
                 },
-                None =>  {
-                    panic!("Ascent ceiling is < 1.0 but NDL was found.")
-                }
+                None => panic!("ascent ceiling is < 1.0 but NDL was found"),
             };
             return stops;
         }

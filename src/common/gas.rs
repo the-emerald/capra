@@ -25,7 +25,7 @@ pub struct Gas {
 
 impl Gas {
     pub fn new(fr_n2: f64, fr_o2: f64, fr_he: f64) -> Result<Self, GasError> {
-        if fr_n2 + fr_o2 + fr_he != 1.0 || !valid_pp(fr_n2) || !valid_pp(fr_o2) ||
+        if (fr_n2 + fr_o2 + fr_he - 1.0).abs() > 0.005 || !valid_pp(fr_n2) || !valid_pp(fr_o2) ||
             !valid_pp(fr_he){
             return Err(GasError::FractionError)
         }

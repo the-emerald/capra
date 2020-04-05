@@ -1,10 +1,9 @@
 use crate::common::dive_segment::{DiveSegment, SegmentType};
 use crate::common::gas::{Gas, partial_pressure};
 
-pub fn calculate_otu(segments: &Vec<DiveSegment>, gas: &Gas) -> f64 {
+pub fn calculate_otu(segments: &[DiveSegment], gas: &Gas) -> f64 {
     let mut otu= 0.0;
     for segment in segments {
-        //println!("{:?}", segment);
         if segment.get_time() == 0 {
             continue;
         }
