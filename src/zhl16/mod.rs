@@ -1,6 +1,7 @@
 use crate::common;
 use std::f64::consts::{LN_2, E};
 use crate::common::dive_segment::{DiveSegment, SegmentType};
+use crate::gas::Gas;
 
 pub mod util;
 
@@ -25,7 +26,7 @@ pub struct ZHL16 {
 }
 
 impl ZHL16 {
-    pub fn new(tissue_gas: &common::gas::Gas, n2_a: [f64; TISSUE_COUNT], n2_b: [f64; TISSUE_COUNT],
+    pub fn new(tissue_gas: &Gas, n2_a: [f64; TISSUE_COUNT], n2_b: [f64; TISSUE_COUNT],
                n2_hl: [f64; TISSUE_COUNT], he_a: [f64;TISSUE_COUNT], he_b: [f64;TISSUE_COUNT],
                he_hl: [f64;TISSUE_COUNT], gf_low: usize, gf_high: usize) -> Self {
 
@@ -76,7 +77,7 @@ impl ZHL16 {
         }
     }
 
-    pub(crate) fn add_depth_change(&mut self, segment: &DiveSegment, gas: &common::gas::Gas) {
+    pub(crate) fn add_depth_change(&mut self, segment: &DiveSegment, gas: &Gas) {
         let delta_depth = (segment.get_end_depth() as isize) - (self.diver_depth as isize);
         let rate;
         if delta_depth > 0 {
@@ -119,7 +120,7 @@ impl ZHL16 {
             (initial_ambient_pressure - initial_pressure - (r / k)) * E.powf(-1.0 * k * time)
     }
 
-    pub(crate) fn add_bottom(&mut self, segment: &DiveSegment, gas: &common::gas::Gas) {
+    pub(crate) fn add_bottom(&mut self, segment: &DiveSegment, gas: &Gas) {
         for (idx, val) in self.p_n2.iter_mut().enumerate() {
             let po = *val;
             let pi = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_n2();
@@ -177,7 +178,7 @@ impl ZHL16 {
     }
 
     pub(crate) fn next_stop(&self, ascent_rate: isize, descent_rate: isize,
-                            gas: &common::gas::Gas) -> DiveSegment {
+                            gas: &Gas) -> DiveSegment {
         let stop_depth = (3.0*(
             (common::bar_mtr(self.find_ascent_ceiling(None))/3.0)
                 .ceil())) as usize;
@@ -199,7 +200,7 @@ impl ZHL16 {
                          stop_time, ascent_rate, descent_rate).unwrap()
     }
 
-    pub(crate) fn ndl(&self, gas: &common::gas::Gas) -> Option<DiveSegment> {
+    pub(crate) fn ndl(&self, gas: &Gas) -> Option<DiveSegment> {
         let mut ndl = 0;
         let mut in_ndl= true;
         while in_ndl {
@@ -226,7 +227,7 @@ impl ZHL16 {
 
 impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
     fn add_bottom_time(&mut self, segment: &common::dive_segment::DiveSegment,
-                       gas: &common::gas::Gas) -> Option<Vec<DiveSegment>> {
+                       gas: &Gas) -> Option<Vec<DiveSegment>> {
         let intermediate_stops = self.get_stops(
             segment.get_ascent_rate(), segment.get_descent_rate(), gas);
         let mut used_stops:Vec<DiveSegment> = Vec::new();
@@ -251,7 +252,7 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
         }
     }
 
-    fn get_stops(&self, ascent_rate: isize, descent_rate: isize, gas: &common::gas::Gas)
+    fn get_stops(&self, ascent_rate: isize, descent_rate: isize, gas: &Gas)
         -> Vec<DiveSegment> {
         let mut stops: Vec<DiveSegment> = Vec::new();
         let mut virtual_zhl16 = *self;

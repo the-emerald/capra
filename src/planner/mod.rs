@@ -1,4 +1,4 @@
-use crate::common::gas::{Gas, partial_pressure};
+use crate::gas::{partial_pressure, Gas};
 
 pub mod dive;
 pub mod open_circuit;

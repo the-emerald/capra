@@ -1,4 +1,5 @@
 use crate::common::mtr_bar;
+pub mod otu;
 
 #[derive(Debug)]
 pub enum GasError {

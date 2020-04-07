@@ -1,8 +1,8 @@
 use crate::common::deco_algorithm::DecoAlgorithm;
 use crate::common::dive_segment::{DiveSegment, SegmentType};
-use crate::common::gas::{Gas, partial_pressure};
 use crate::planner::dive::Dive;
 use crate::planner::{gas_in_ppo2_range, equivalent_narcotic_depth, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
+use crate::gas::{Gas, partial_pressure};
 
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuit<'a, T: DecoAlgorithm + Copy + Clone> {
