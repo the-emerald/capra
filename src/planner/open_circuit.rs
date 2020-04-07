@@ -126,6 +126,7 @@ impl<'a, T: DecoAlgorithm + Copy + Clone> OpenCircuit<'a, T> {
                                                   new_stops[1].get_time(), self.ascent_rate, self.descent_rate).unwrap(); // Use the second segment (first is AscDesc)
 
                         // We do not push any stops or add bottom time here because function will do so already.
+                        self.deco_algorithm = virtual_deco;
                         self.level_to_level(&u2, end_segment,
                                        u.1, stops_performed) // Recursively call level_to_level with the new start segment as u
                     }
