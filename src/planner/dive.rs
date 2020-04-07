@@ -2,5 +2,5 @@ use crate::common::dive_segment::DiveSegment;
 use crate::gas::Gas;
 
 pub trait Dive {
-    fn plan_dive(&mut self) -> Vec<(DiveSegment, Gas)>;
+    fn execute_dive(&mut self) -> Vec<(DiveSegment, Gas)>;
 }

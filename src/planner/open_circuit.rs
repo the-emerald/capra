@@ -143,7 +143,7 @@ impl<'a, T: DecoAlgorithm + Copy + Clone> OpenCircuit<'a, T> {
 }
 
 impl<'a, T: DecoAlgorithm + Copy + Clone> Dive for OpenCircuit<'a, T> {
-    fn plan_dive(&mut self) -> Vec<(DiveSegment, Gas)> {
+    fn execute_dive(&mut self) -> Vec<(DiveSegment, Gas)> {
         let mut total_segments: Vec<(DiveSegment, Gas)> = Vec::new();
         if self.bottom_segments.len() != 1 { // If this is a multi-level dive then use a sliding window.
             let windowed_segments = self.bottom_segments.windows(2);
