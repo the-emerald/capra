@@ -78,7 +78,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
             }
         }
 
-        let mut virtual_deco = self.deco_algorithm.clone();
+        let mut virtual_deco = self.deco_algorithm;
         let intermediate_stops = match end_segment { // Check if there are intermediate stops
             Some(t) => {
                 let zero_to_t_segment = DiveSegment::new(SegmentType::AscDesc,
@@ -102,7 +102,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                 let switch = <OpenCircuit<'a, T>>::determine_gas_switch(&t, start_gas, self.deco_gases);
                 match switch {
                     Some(u) => { // There are gas switches to perform. u = target stop
-                        virtual_deco = self.deco_algorithm.clone(); // Rewind to beginning of level
+                        virtual_deco = self.deco_algorithm; // Rewind to beginning of level
                         for i in t {
                             if i.get_segment_type() == SegmentType::AscDesc {
                                 continue;
@@ -114,7 +114,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                             stops_performed.push((i, *start_gas));
                         }
 
-                        let mut new_stop_time_deco = virtual_deco.clone(); // Calculate the new stop time
+                        let mut new_stop_time_deco = virtual_deco; // Calculate the new stop time
                         let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                             u.0.get_start_depth(), u.0.get_end_depth(),
                                                             0, -self.ascent_rate, self.descent_rate).unwrap();
