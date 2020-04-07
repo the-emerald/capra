@@ -252,13 +252,13 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
         }
     }
 
-    fn get_stops(&self, ascent_rate: isize, descent_rate: isize, gas: &Gas)
-        -> Vec<DiveSegment> {
+    fn surface(&mut self, ascent_rate: isize, descent_rate: isize, gas: &Gas)
+               -> Vec<DiveSegment> {
         let mut stops: Vec<DiveSegment> = Vec::new();
-        let mut virtual_zhl16 = *self;
+        // let mut virtual_zhl16 = *self;
 
-        if virtual_zhl16.find_ascent_ceiling(Some(self.gf_high)) < 1.0 {
-            match virtual_zhl16.ndl(gas) {
+        if self.find_ascent_ceiling(Some(self.gf_high)) < 1.0 {
+            match self.ndl(gas) {
                 Some(t) => {
                     stops.push(t)
                 },
@@ -267,13 +267,13 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
             return stops;
         }
 
-        let mut last_depth = virtual_zhl16.diver_depth;
-        while virtual_zhl16.find_ascent_ceiling(None) > 1.0 {
-            let stop = virtual_zhl16.next_stop(ascent_rate, descent_rate, gas);
-            virtual_zhl16.update_first_deco_depth(stop.get_end_depth());
+        let mut last_depth = self.diver_depth;
+        while self.find_ascent_ceiling(None) > 1.0 {
+            let stop = self.next_stop(ascent_rate, descent_rate, gas);
+            self.update_first_deco_depth(stop.get_end_depth());
             // Do the deco stop
-            virtual_zhl16.add_depth_change(&stop, gas);
-            virtual_zhl16.add_bottom(&stop, gas);
+            self.add_depth_change(&stop, gas);
+            self.add_bottom(&stop, gas);
             stops.push(DiveSegment::new(SegmentType::AscDesc,
                                         last_depth, stop.get_end_depth(),
                                         0, ascent_rate, descent_rate).unwrap());

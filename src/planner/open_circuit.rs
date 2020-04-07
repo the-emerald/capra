@@ -87,9 +87,10 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                 virtual_deco.add_bottom_time(&zero_to_t_segment, start_gas)
             }, // More stops: add the next bottom.
             None => { // Next "stop" is a surface:
-                let s = virtual_deco.get_stops(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas);
+                let s = virtual_deco.surface(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas);
                 match s[0].get_segment_type() {
                     SegmentType::NoDeco => {
+                        self.deco_algorithm = virtual_deco;
                         return;
                     },
                     _ => Some(s)
@@ -119,7 +120,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                                                             0, -self.ascent_rate, self.descent_rate).unwrap();
                         new_stop_time_deco.add_bottom_time(&test_segment, start_gas); // Add a zero-minute stop
 
-                        let new_stops = new_stop_time_deco.get_stops(self.ascent_rate, self.descent_rate, u.1); // Use next gas on the stops
+                        let new_stops = new_stop_time_deco.surface(self.ascent_rate, self.descent_rate, u.1); // Use next gas on the stops
                         let u2 = DiveSegment::new(SegmentType::DecoStop,
                                                   u.0.get_start_depth(), u.0.get_end_depth(),
                                                   new_stops[1].get_time(), self.ascent_rate, self.descent_rate).unwrap(); // Use the second segment (first is AscDesc)
@@ -133,10 +134,13 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                         for x in t {
                             stops_performed.push((x, *start_gas));
                         }
+                        self.deco_algorithm = virtual_deco;
                     }
                 }
             }
-            None => {} // There are no deco stops to perform.
+            None => {
+               self.deco_algorithm = virtual_deco;
+            } // There are no deco stops to perform.
         }
     }
 }
