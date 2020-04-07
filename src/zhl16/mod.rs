@@ -255,7 +255,6 @@ impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
     fn surface(&mut self, ascent_rate: isize, descent_rate: isize, gas: &Gas)
                -> Vec<DiveSegment> {
         let mut stops: Vec<DiveSegment> = Vec::new();
-        // let mut virtual_zhl16 = *self;
 
         if self.find_ascent_ceiling(Some(self.gf_high)) < 1.0 {
             match self.ndl(gas) {
