@@ -1,7 +1,7 @@
 use crate::common::gas::{Gas, partial_pressure};
 
-mod dive;
-mod open_circuit;
+pub mod dive;
+pub mod open_circuit;
 
 pub const PPO2_MINIMUM: f64 = 0.18;
 pub const PPO2_MAXIMUM_DIVE: f64 = 1.4;
