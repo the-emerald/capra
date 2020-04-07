@@ -1,7 +1,8 @@
 use crate::common;
 use std::f64::consts::{LN_2, E};
 use crate::common::dive_segment::{DiveSegment, SegmentType};
-use crate::gas::Gas;
+use crate::common::gas::Gas;
+use crate::deco::deco_algorithm::DecoAlgorithm;
 
 pub mod util;
 
@@ -225,7 +226,7 @@ impl ZHL16 {
     }
 }
 
-impl common::deco_algorithm::DecoAlgorithm for ZHL16 {
+impl DecoAlgorithm for ZHL16 {
     fn add_bottom_time(&mut self, segment: &common::dive_segment::DiveSegment,
                        gas: &Gas) -> Option<Vec<DiveSegment>> {
         let intermediate_stops = self.get_stops(

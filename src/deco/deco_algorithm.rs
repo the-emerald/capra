@@ -1,6 +1,6 @@
 use crate::common::dive_segment;
-use crate::gas::Gas;
 use std::fmt::Debug;
+use crate::common::gas::Gas;
 
 pub trait DecoAlgorithm: Copy + Clone + Debug {
     fn add_bottom_time(&mut self, segment: &dive_segment::DiveSegment, gas: &Gas) -> Option<Vec<dive_segment::DiveSegment>>;

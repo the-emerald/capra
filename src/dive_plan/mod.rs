@@ -1,4 +1,4 @@
-use crate::gas::{partial_pressure, Gas};
+use crate::common::gas::{Gas, partial_pressure};
 
 pub mod dive;
 pub mod open_circuit;
@@ -11,7 +11,7 @@ fn equivalent_narcotic_depth(depth: usize, gas: &Gas) -> usize { // Returns a de
     (((depth + 10) as f64 * (1.0 - gas.fr_he())) - 10.0) as usize
 }
 
-fn gas_in_ppo2_range(depth: usize, min: f64, max: f64, gas: &Gas) -> bool { // Checks if gas is in ppo2 range
+fn gas_in_ppo2_range(depth: usize, min: f64, max: f64, gas: &Gas) -> bool { // Checks if gas_plan is in ppo2 range
     let gas_ppo2 = partial_pressure(depth, gas.fr_o2());
     gas_ppo2 >= min && gas_ppo2 <= max
 }

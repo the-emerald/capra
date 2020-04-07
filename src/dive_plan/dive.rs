@@ -1,6 +1,6 @@
 use crate::common::dive_segment::DiveSegment;
-use crate::gas::Gas;
-use crate::common::deco_algorithm::DecoAlgorithm;
+use crate::deco::deco_algorithm::DecoAlgorithm;
+use crate::common::gas::Gas;
 
 pub trait Dive<T: DecoAlgorithm> {
     fn execute_dive(&mut self) -> Vec<(DiveSegment, Gas)>;

@@ -1,4 +1,4 @@
-pub mod zhl16;
 pub mod common;
-pub mod planner;
-pub mod gas;
+pub mod deco;
+pub mod dive_plan;
+pub mod gas_plan;

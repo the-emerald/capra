@@ -1,5 +1,5 @@
 use crate::common::dive_segment::{DiveSegment, SegmentType};
-use crate::gas::{Gas, partial_pressure};
+use crate::common::gas::{partial_pressure, Gas};
 
 pub fn calculate_otu(segments: &[DiveSegment], gas: &Gas) -> f64 {
     let mut otu= 0.0;
