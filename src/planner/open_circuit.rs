@@ -5,7 +5,7 @@ use crate::planner::{gas_in_ppo2_range, equivalent_narcotic_depth, PPO2_MINIMUM,
 use crate::gas::{Gas, partial_pressure};
 
 #[derive(Copy, Clone, Debug)]
-pub struct OpenCircuit<'a, T: DecoAlgorithm + Copy + Clone> {
+pub struct OpenCircuit<'a, T: DecoAlgorithm> {
     deco_algorithm: T,
     deco_gases: &'a [(Gas, Option<usize>)],
     bottom_segments: &'a [(DiveSegment, Gas)],
@@ -14,7 +14,7 @@ pub struct OpenCircuit<'a, T: DecoAlgorithm + Copy + Clone> {
     descent_rate: isize
 }
 
-impl<'a, T: DecoAlgorithm + Copy + Clone> OpenCircuit<'a, T> {
+impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
     pub fn new(deco_algorithm: T, deco_gases: &'a [(Gas, Option<usize>)],
                bottom_segments: &'a [(DiveSegment, Gas)], ascent_rate: isize,
                descent_rate: isize) -> Self {
@@ -71,7 +71,6 @@ impl<'a, T: DecoAlgorithm + Copy + Clone> OpenCircuit<'a, T> {
     pub(crate) fn level_to_level(&mut self, start_segment: &DiveSegment,
                                  end_segment: Option<&DiveSegment>, start_gas: &Gas,
                                  stops_performed: &mut Vec<(DiveSegment, Gas)>) {
-        // Returns the deco model AFTER operations are done.
 
         if let Some(t) = end_segment {
             if start_segment.get_end_depth() == t.get_end_depth() { // Check if there is a depth change
@@ -114,7 +113,7 @@ impl<'a, T: DecoAlgorithm + Copy + Clone> OpenCircuit<'a, T> {
                             stops_performed.push((i, *start_gas));
                         }
 
-                        let mut new_stop_time_deco = virtual_deco; // Calculate the new stop time
+                        let mut new_stop_time_deco = virtual_deco.clone(); // Calculate the new stop time
                         let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                             u.0.get_start_depth(), u.0.get_end_depth(),
                                                             0, -self.ascent_rate, self.descent_rate).unwrap();
@@ -142,7 +141,7 @@ impl<'a, T: DecoAlgorithm + Copy + Clone> OpenCircuit<'a, T> {
     }
 }
 
-impl<'a, T: DecoAlgorithm + Copy + Clone> Dive for OpenCircuit<'a, T> {
+impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
     fn execute_dive(&mut self) -> Vec<(DiveSegment, Gas)> {
         let mut total_segments: Vec<(DiveSegment, Gas)> = Vec::new();
         if self.bottom_segments.len() != 1 { // If this is a multi-level dive then use a sliding window.
@@ -166,5 +165,9 @@ impl<'a, T: DecoAlgorithm + Copy + Clone> Dive for OpenCircuit<'a, T> {
         self.level_to_level(&final_stop.0, None, &final_stop.1, &mut stops_performed);
         total_segments.append(&mut stops_performed);
         total_segments
+    }
+
+    fn finish(self) -> T {
+        self.deco_algorithm
     }
 }
