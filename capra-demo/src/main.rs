@@ -2,8 +2,8 @@ use capra::zhl16;
 use capra::common;
 use capra::common::deco_algorithm::DecoAlgorithm;
 use capra::common::dive_segment::{DiveSegment, SegmentType};
-use capra::common::gas::Gas;
 use capra::common::otu::calculate_otu;
+use capra::gas::Gas;
 
 fn gas_string(gas: &Gas) -> String {
     format!("{}/{}", (gas.fr_o2()*100.0) as usize, (gas.fr_he()*100.0) as usize)
@@ -93,7 +93,7 @@ fn main() {
     let deco_stop_1_segment = dive.add_bottom_time(&deco_stop_1, &half_o2);
     pretty_print_segment_deco(deco_stop_1_depth, deco_stop_1_time, &half_o2, &deco_stop_1_segment);
 
-    let final_deco = dive.get_stops(ascent_rate, descent_rate, &half_o2);
+    let final_deco = dive.surface(ascent_rate, descent_rate, &half_o2);
     pretty_print_deco_stops(&final_deco, &half_o2);
 
 }
