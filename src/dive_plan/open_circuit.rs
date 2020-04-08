@@ -90,7 +90,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
             Some(t) => {
                 let zero_to_t_segment = DiveSegment::new(SegmentType::AscDesc,
                                                          t.get_start_depth(), t.get_end_depth(),
-                                                         0, self.ascent_rate, self.descent_rate).unwrap();
+                                                         0, self.ascent_rate, self.descent_rate).unwrap(); // TODO: Use actual times
                 virtual_deco.add_bottom_time(&zero_to_t_segment, start_gas)
             }, // More stops: add the next bottom.
             None => { // Next "stop" is a surface:

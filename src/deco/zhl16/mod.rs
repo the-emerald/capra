@@ -276,7 +276,7 @@ impl DecoAlgorithm for ZHL16 {
             self.add_bottom(&stop, gas);
             stops.push(DiveSegment::new(SegmentType::AscDesc,
                                         last_depth, stop.get_end_depth(),
-                                        0, ascent_rate, descent_rate).unwrap());
+                                        0, ascent_rate, descent_rate).unwrap()); // TODO: Use actual times
             last_depth = stop.get_end_depth();
             stops.push(stop);
         }
