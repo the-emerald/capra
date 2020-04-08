@@ -3,6 +3,8 @@ use crate::dive_plan::dive::Dive;
 use crate::dive_plan::{gas_in_ppo2_range, equivalent_narcotic_depth, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::common::gas::{Gas, partial_pressure};
+use crate::gas_plan::GasPlan;
+use crate::gas_plan::tank::Tank;
 
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuit<'a, T: DecoAlgorithm> {
@@ -11,19 +13,24 @@ pub struct OpenCircuit<'a, T: DecoAlgorithm> {
     bottom_segments: &'a [(DiveSegment, Gas)],
 
     ascent_rate: isize,
-    descent_rate: isize
+    descent_rate: isize,
+
+    sac_bottom: usize,
+    sac_deco: usize
 }
 
 impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
     pub fn new(deco_algorithm: T, deco_gases: &'a [(Gas, Option<usize>)],
                bottom_segments: &'a [(DiveSegment, Gas)], ascent_rate: isize,
-               descent_rate: isize) -> Self {
+               descent_rate: isize, sac_bottom: usize, sac_deco: usize) -> Self {
         OpenCircuit {
             deco_algorithm,
             deco_gases,
             bottom_segments,
             ascent_rate,
-            descent_rate
+            descent_rate,
+            sac_bottom,
+            sac_deco
         }
     }
 
@@ -173,5 +180,31 @@ impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
 
     fn finish(self) -> T {
         self.deco_algorithm
+    }
+}
+
+impl<'a, U: Dive<T>, T: DecoAlgorithm> GasPlan<T, U> for OpenCircuit<'a, T> {
+    fn plan_forwards(&self) -> Vec<(Gas, usize)> {  // Given a dive profile, how much gas do we need?
+        let mut gas_plan: Vec<(Gas, usize)> = Vec::new();
+
+        // Bottom segments
+        for (segment, gas) in self.bottom_segments {
+            gas_plan.push((
+                *gas,
+                <Self as GasPlan<T, U>>::calculate_consumed(segment, self.sac_bottom)
+            ))
+        }
+
+        // Deco segments
+        let mut virtual_dive = self.clone();
+        let virtual_deco = virtual_dive.execute_dive();
+        for (segment, gas) in virtual_deco {
+            // TODO: Add gas consumption calculation here
+        }
+        gas_plan
+    }
+
+    fn plan_backwards(&self, tanks: &[Tank]) -> Vec<(DiveSegment, Gas)> {
+        unimplemented!() // TODO: Implement backwards planning
     }
 }
