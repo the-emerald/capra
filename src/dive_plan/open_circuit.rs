@@ -85,14 +85,6 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         None
     }
 
-    // fn check_gas_swap<'c>(segments: &[DiveSegment], current_gas: &'c Gas, gases: &'c [(Gas, Option<usize>)]) -> Option<&'c Gas> {
-    //     println!("Check");
-    //     match <OpenCircuit<'c, T>>::find_gas_switch_point(segments, current_gas, gases) {
-    //         Some(t) => { Some(t.1) },
-    //         None => None
-    //     }
-    // }
-
     pub(crate) fn level_to_level(&mut self, start_segment: &DiveSegment,
                                  end_segment: Option<&DiveSegment>, start_gas: &Gas,
                                  stops_performed: &mut Vec<(DiveSegment, Gas)>) {
@@ -110,7 +102,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                                                          t.get_start_depth(), t.get_end_depth(),
                                                          // time_taken(self.ascent_rate, t.get_end_depth(), t.get_start_depth()),
                                                          Duration::seconds(0),
-                                                         self.ascent_rate, self.descent_rate).unwrap(); // TODO: Use actual times
+                                                         self.ascent_rate, self.descent_rate).unwrap();
                 virtual_deco.add_bottom_time(&zero_to_t_segment, start_gas)
             }, // More stops: add the next bottom.
             None => { // Next "stop" is a surface:
@@ -126,7 +118,6 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         };
         match intermediate_stops {
             Some(t) => { // There are deco stops to perform.
-                // println!("Vec<D> time");
                 let switch = <OpenCircuit<'a, T>>::find_gas_switch_point(
                     &t
                         .iter()
@@ -138,9 +129,6 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                 match switch {
                     Some(u) => { // There are gas_plan switches to perform. u = target stop
                         virtual_deco = self.deco_algorithm; // Rewind to beginning of level
-                        // println!("A: {:?}\n{:?}\n", *start_gas, t);
-
-                        // println!("Switch time");
                         for i in t {
                             if i.get_start_depth() == u.0.get_start_depth() { // Replay to stop **before** u
                                 break;
@@ -149,7 +137,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                             if i.get_segment_type() != SegmentType::AscDesc {
                                 virtual_deco.add_bottom_time(&i, start_gas);
                             }
-                            else {
+                            else { // Use a zero-timed, constant-end-depth segment to update model
                                 let normalised_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                                           i.get_end_depth(),
                                                                           i.get_end_depth(),
@@ -157,28 +145,16 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                                                                           self.ascent_rate, self.descent_rate).unwrap();
                                 virtual_deco.add_bottom_time(&normalised_segment, start_gas);
                             }
-
-                            // println!("! Current gas: {:?}, Seg: {:?}", start_gas, i);
-                            // match <OpenCircuit<'a, T>>::check_gas_swap(&[i], start_gas, self.deco_gases) {
-                            //     Some(v) => {
-                            //         stops_performed.push((i, *v));
-                            //         println!("yo!");
-                            //     }
-                            //     None => {}
-                            // }
                             stops_performed.push((i, *start_gas));
                         }
-                        // println!("We're leaving\n");
 
                         let mut new_stop_time_deco = virtual_deco; // Calculate the new stop time
-                        // println!("u0: {:?}", u.0);
                         let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                             u.0.get_start_depth(), u.0.get_end_depth(),
                                                             Duration::seconds(0), self.ascent_rate, self.descent_rate).unwrap();
                         new_stop_time_deco.add_bottom_time(&test_segment, start_gas); // Add a zero-minute stop
 
                         let new_stops = new_stop_time_deco.surface(self.ascent_rate, self.descent_rate, u.1); // Use next gas_plan on the stops
-                        // println!("newstops: {:?}", &new_stops);
                         let mut force_add = false;
                         let u2_time = match &new_stops[0].get_time().cmp(&Duration::minute()) {
                             Ordering::Less => {
@@ -196,24 +172,13 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                             stops_performed.push((u2, *u.1));
                         }
 
-                        // println!("u2: {:?}", u2);
-                        // println!("Model: {:?}", &virtual_deco);
                         // We do not push any stops or add bottom time here because function will do so already.
                         self.deco_algorithm = virtual_deco;
                         self.level_to_level(&u2, end_segment,
                                        u.1, stops_performed) // Recursively call level_to_level with the new start segment as u
                     }
                     None => { // There are deco stops to perform but no gas_plan switches necessary.
-                        // println!("B: {:?}\n{:?}\n", *start_gas, t);
                         for x in t {
-                            // println!("... Current gas: {:?}, Seg: {:?}", start_gas, &x);
-                            // match <OpenCircuit<'a, T>>::check_gas_swap(&[x], start_gas, self.deco_gases) {
-                            //     Some(u) => {
-                            //         stops_performed.push((x, *u));
-                            //         println!("yo... {:?}", u);
-                            //     }
-                            //     None => {stops_performed.push((x, *start_gas));}
-                            // }
                             stops_performed.push((x, *start_gas));
                         }
                         self.deco_algorithm = virtual_deco;
