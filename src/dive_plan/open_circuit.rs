@@ -97,14 +97,14 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
 
         let mut virtual_deco = self.deco_algorithm;
         let intermediate_stops = match end_segment { // Check if there are intermediate stops
-            Some(t) => {
+            Some(t) => {  // There are more stops.
+                // Use a zero-timed segment to find intermediate stops.
                 let zero_to_t_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                          t.get_start_depth(), t.get_end_depth(),
-                                                         // time_taken(self.ascent_rate, t.get_end_depth(), t.get_start_depth()),
                                                          Duration::zero(),
                                                          self.ascent_rate, self.descent_rate).unwrap();
                 virtual_deco.add_bottom_time(&zero_to_t_segment, start_gas, self.metres_per_bar)
-            }, // More stops: add the next bottom.
+            },
             None => { // Next "stop" is a surface:
                 let s = virtual_deco.surface(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas, self.metres_per_bar);
                 match s[0].get_segment_type() {
@@ -127,7 +127,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                     ,
                     start_gas, self.deco_gases, self.metres_per_bar);
                 match switch {
-                    Some(u) => { // There are gas_plan switches to perform. u = target stop
+                    Some(u) => { // There are gas switches to perform, and u = target stop
                         virtual_deco = self.deco_algorithm; // Rewind to beginning of level
                         for i in t {
                             if i.get_start_depth() == u.0.get_start_depth() { // Replay to stop **before** u
@@ -148,7 +148,8 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                             stops_performed.push((i, *start_gas));
                         }
 
-                        let mut new_stop_time_deco = virtual_deco; // Calculate the new stop time
+                        // Now that we are using a new gas at stop u, we must recalculate the new stop time.
+                        let mut new_stop_time_deco = virtual_deco;
                         let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                             u.0.get_start_depth(), u.0.get_end_depth(),
                                                             Duration::zero(), self.ascent_rate, self.descent_rate).unwrap();
@@ -156,6 +157,8 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
 
                         let new_stops = new_stop_time_deco.surface(self.ascent_rate, self.descent_rate, u.1, self.metres_per_bar); // Use next gas_plan on the stops
                         let mut force_add = false;
+
+                        // If the new stop time is less than a minute, enforce the minimum stop rule.
                         let u2_time = match &new_stops[0].get_time().cmp(&Duration::minute()) {
                             Ordering::Less => {
                                 force_add = true;
