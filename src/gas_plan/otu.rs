@@ -1,22 +1,20 @@
 use crate::common::dive_segment::{DiveSegment, SegmentType};
 use crate::common::gas::{partial_pressure, Gas};
 
+// TODO: Refactor OTU calculations!
 pub fn calculate_otu(segments: &[(DiveSegment, Gas)]) -> f64 {
     let mut otu= 0.0;
     for (segment, gas) in segments {
-        if segment.get_time() == 0 {
-            continue;
-        }
         match segment.get_segment_type() {
             SegmentType::AscDesc => {
-                otu += ascent_descent_constant(segment.get_time(),
+                otu += ascent_descent_constant(segment.get_time().whole_minutes() as usize,
                                                partial_pressure(segment.get_start_depth(),
                                                                 gas.fr_o2()),
                                                partial_pressure(segment.get_start_depth(),
                                                                 gas.fr_o2()));
             },
             _ => {
-                otu += constant_depth(segment.get_time(),
+                otu += constant_depth(segment.get_time().whole_minutes() as usize,
                                       partial_pressure(segment.get_end_depth(), gas.fr_o2()));
             }
         }

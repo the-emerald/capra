@@ -3,6 +3,8 @@ use std::f64::consts::{LN_2, E};
 use crate::common::dive_segment::{DiveSegment, SegmentType};
 use crate::common::gas::Gas;
 use crate::deco::deco_algorithm::DecoAlgorithm;
+use time::Duration;
+use crate::common::time_taken;
 
 pub mod util;
 
@@ -126,7 +128,7 @@ impl ZHL16 {
             let po = *val;
             let pi = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_n2();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f64.powf(-1.0*segment.get_time() as f64 / self.n2_hl[idx])));
+                (1.0 - (2.0_f64.powf(-1.0*segment.get_time().whole_minutes() as f64 / self.n2_hl[idx])));
             *val = p;
             self.p_t[idx] = p;
         }
@@ -135,7 +137,7 @@ impl ZHL16 {
             let po = *val;
             let pi = ZHL16::compensated_pressure(segment.get_end_depth()) * gas.fr_he();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f64.powf(-1.0*segment.get_time() as f64 / self.he_hl[idx])));
+                (1.0 - (2.0_f64.powf(-1.0*segment.get_time().whole_minutes() as f64 / self.he_hl[idx])));
             *val = p;
             self.p_t[idx] += p;
         }
@@ -189,7 +191,7 @@ impl ZHL16 {
             let mut virtual_zhl16 = *self;
             let segment = DiveSegment::new(SegmentType::DecoStop,
                                            stop_depth, stop_depth,
-                                           stop_time, ascent_rate, descent_rate).unwrap();
+                                           Duration::minutes(stop_time as i64), ascent_rate, descent_rate).unwrap();
             virtual_zhl16.add_depth_change(&segment, gas);
             virtual_zhl16.add_bottom(&segment, gas);
             virtual_zhl16.update_first_deco_depth(segment.get_end_depth());
@@ -198,7 +200,7 @@ impl ZHL16 {
             stop_time += 1;
         }
         DiveSegment::new(SegmentType::DecoStop, stop_depth, stop_depth,
-                         stop_time, ascent_rate, descent_rate).unwrap()
+                         Duration::minutes(stop_time as i64), ascent_rate, descent_rate).unwrap()
     }
 
     pub(crate) fn ndl(&self, gas: &Gas) -> Option<DiveSegment> {
@@ -208,7 +210,7 @@ impl ZHL16 {
             let mut virtual_zhl16 = *self;
             let virtual_segment = DiveSegment::new(SegmentType::NoDeco,
                                                    virtual_zhl16.diver_depth,
-                                                   virtual_zhl16.diver_depth, ndl,
+                                                   virtual_zhl16.diver_depth, Duration::minutes(ndl),
                                                    0, 0).unwrap();
             virtual_zhl16.add_bottom(&virtual_segment, gas);
             in_ndl = virtual_zhl16.find_ascent_ceiling(Some(self.gf_high)) < 1.0;
@@ -218,11 +220,11 @@ impl ZHL16 {
             if ndl > 999 {
                 return Some(DiveSegment::new(SegmentType::NoDeco,
                                               self.diver_depth, self.diver_depth,
-                                              std::usize::MAX, 0, 0).unwrap())
+                                              Duration::seconds(std::i64::MAX), 0, 0).unwrap())
             }
         }
         Some(DiveSegment::new(SegmentType::NoDeco, self.diver_depth,
-                              self.diver_depth, ndl, 0, 0).unwrap())
+                              self.diver_depth, Duration::minutes(ndl), 0, 0).unwrap())
     }
 }
 
@@ -274,10 +276,18 @@ impl DecoAlgorithm for ZHL16 {
             // Do the deco stop
             self.add_depth_change(&stop, gas);
             self.add_bottom(&stop, gas);
-            stops.push(DiveSegment::new(SegmentType::AscDesc,
-                                        last_depth, stop.get_end_depth(),
-                                        0, ascent_rate, descent_rate).unwrap()); // TODO: Use actual times
+            let delta_time = time_taken(
+                ascent_rate,
+                stop.get_end_depth(),
+                last_depth
+            );
+            if !delta_time.is_zero() {
+                stops.push(DiveSegment::new(SegmentType::AscDesc,
+                                            last_depth, stop.get_end_depth(),
+                                            delta_time, ascent_rate, descent_rate).unwrap());
+            }
             last_depth = stop.get_end_depth();
+            self.diver_depth = last_depth;
             stops.push(stop);
         }
         stops

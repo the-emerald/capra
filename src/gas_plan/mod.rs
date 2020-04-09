@@ -23,6 +23,6 @@ pub trait GasPlan<U, T: Dive<U>>: Dive<U> where U: DecoAlgorithm {
         else {
             pressure = mtr_bar(segment.get_end_depth() as f64)
         }
-        (pressure * segment.get_time() as f64 * sac_rate as f64) as usize
+        (pressure * (segment.get_time().as_seconds_f64()/60.0) * sac_rate as f64) as usize
     }
 }

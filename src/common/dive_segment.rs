@@ -1,5 +1,6 @@
 use crate::common::dive_segment::SegmentType::AscDesc;
 use crate::common::dive_segment::DiveSegmentError::IncorrectSegmentTypeError;
+use time::Duration;
 
 #[derive(Debug)]
 pub enum DiveSegmentError {
@@ -27,14 +28,14 @@ pub struct DiveSegment {
     segment_type: SegmentType,
     start_depth: usize,
     end_depth: usize,
-    time: usize,
+    time: Duration,
     // Ascent rate and descent rate are for reaching the current DiveSegment from the previous.
     ascent_rate: isize,
     descent_rate: isize,
 }
 
 impl DiveSegment {
-    pub fn new(segment_type: SegmentType, start_depth: usize, end_depth: usize, time: usize,
+    pub fn new(segment_type: SegmentType, start_depth: usize, end_depth: usize, time: Duration,
                ascent_rate: isize, descent_rate: isize) -> Result<Self, DiveSegmentError> {
         if segment_type != AscDesc && start_depth != end_depth {
             return Err(IncorrectSegmentTypeError)
@@ -62,8 +63,8 @@ impl DiveSegment {
         self.end_depth
     }
 
-    pub fn get_time(&self) -> usize {
-        self.time
+    pub fn get_time(&self) -> &Duration {
+        &self.time
     }
 
     pub fn get_ascent_rate(&self) -> isize {

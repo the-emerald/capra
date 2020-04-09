@@ -5,6 +5,9 @@ use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::common::gas::{Gas, partial_pressure};
 use crate::gas_plan::GasPlan;
 use crate::gas_plan::tank::Tank;
+use time::Duration;
+use crate::common::dive_segment::SegmentType::AscDesc;
+use std::cmp::Ordering;
 
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuit<'a, T: DecoAlgorithm> {
@@ -34,35 +37,42 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         }
     }
 
-    fn determine_gas_switch(segments: &[DiveSegment], current_gas: &Gas, gases: &'a [(Gas, Option<usize>)]) -> Option<(DiveSegment, &'a Gas)> {
-        // Best gas_plan is the gas_plan that has the highest ppO2 (not over max allowed), and not over equivalent_narcotic_depth.
-        for stop in segments {
-            if stop.get_segment_type() == SegmentType::AscDesc {
-                continue;
-            }
-            let mut candidate_gases = Vec::new();
-            for gas in gases { // Do not push any candidates that are deeper than MOD
-                match gas.1 {
-                    Some(t) => {
-                        if t >= stop.get_end_depth() {
-                            candidate_gases.push(&gas.0);
-                        }
-                    }
-                    None => {
-                        candidate_gases.push(&gas.0)
+    fn filter_gases<'b>(segment: &DiveSegment, gases: &'b [(Gas, Option<usize>)]) -> Vec<&'b Gas> {
+        let mut candidates = Vec::new();
+        for gas in gases { // Do not push any candidates that are deeper than MOD
+            match gas.1 {
+                Some(t) => {
+                    if t >= segment.get_start_depth() {
+                        candidates.push(&gas.0);
                     }
                 }
+                None => {
+                    candidates.push(&gas.0)
+                }
             }
-            candidate_gases = candidate_gases.iter().filter(|a|
-                gas_in_ppo2_range(stop.get_end_depth(), PPO2_MINIMUM, PPO2_MAXIMUM_DECO, a)).cloned().collect(); // filter gases not in ppo2 range
+        }
 
-            candidate_gases = candidate_gases.iter().filter(|a|
-                equivalent_narcotic_depth(stop.get_end_depth(), a) <= stop.get_end_depth()).cloned().collect(); // filter gases over E.N.D.
+        candidates = candidates.iter().filter(|a|
+            gas_in_ppo2_range(segment.get_start_depth(), PPO2_MINIMUM, PPO2_MAXIMUM_DECO, a)).cloned().collect(); // filter gases not in ppo2 range
 
-            candidate_gases.sort_by(|a, b|
-                partial_pressure(stop.get_end_depth(), a.fr_o2())
-                    .partial_cmp(&partial_pressure(stop.get_end_depth(), b.fr_o2()))
-                    .unwrap()); // sort by descending order of ppo2
+        candidates = candidates.iter().filter(|a|
+            equivalent_narcotic_depth(segment.get_start_depth(), a) <= segment.get_start_depth()).cloned().collect(); // filter gases over E.N.D.
+
+        candidates.sort_by(|a, b|
+            partial_pressure(segment.get_start_depth(), a.fr_o2())
+                .partial_cmp(&partial_pressure(segment.get_start_depth(), b.fr_o2()))
+                .unwrap()); // sort by descending order of ppo2
+
+        candidates
+    }
+
+    fn find_gas_switch_point(segments: &[DiveSegment], current_gas: &Gas, gases: &'a [(Gas, Option<usize>)]) -> Option<(DiveSegment, &'a Gas)> {
+        // Best gas_plan is the gas_plan that has the highest ppO2 (not over max allowed), and not over equivalent_narcotic_depth.
+        for stop in segments {
+            let candidate_gases = <OpenCircuit<'a, T>>::filter_gases(stop, gases);
+            if stop.get_segment_type() == AscDesc {
+                println!("CG: stop: {:?} gases: {:?} filtered:{:?}", &stop, &gases, &candidate_gases);
+            }
 
             if candidate_gases.is_empty(){ // there no fitting candidate gases.
                 continue;
@@ -74,6 +84,14 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         }
         None
     }
+
+    // fn check_gas_swap<'c>(segments: &[DiveSegment], current_gas: &'c Gas, gases: &'c [(Gas, Option<usize>)]) -> Option<&'c Gas> {
+    //     println!("Check");
+    //     match <OpenCircuit<'c, T>>::find_gas_switch_point(segments, current_gas, gases) {
+    //         Some(t) => { Some(t.1) },
+    //         None => None
+    //     }
+    // }
 
     pub(crate) fn level_to_level(&mut self, start_segment: &DiveSegment,
                                  end_segment: Option<&DiveSegment>, start_gas: &Gas,
@@ -88,9 +106,11 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         let mut virtual_deco = self.deco_algorithm;
         let intermediate_stops = match end_segment { // Check if there are intermediate stops
             Some(t) => {
-                let zero_to_t_segment = DiveSegment::new(SegmentType::AscDesc,
+                let zero_to_t_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                          t.get_start_depth(), t.get_end_depth(),
-                                                         0, self.ascent_rate, self.descent_rate).unwrap(); // TODO: Use actual times
+                                                         // time_taken(self.ascent_rate, t.get_end_depth(), t.get_start_depth()),
+                                                         Duration::seconds(0),
+                                                         self.ascent_rate, self.descent_rate).unwrap(); // TODO: Use actual times
                 virtual_deco.add_bottom_time(&zero_to_t_segment, start_gas)
             }, // More stops: add the next bottom.
             None => { // Next "stop" is a surface:
@@ -106,39 +126,94 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         };
         match intermediate_stops {
             Some(t) => { // There are deco stops to perform.
-                let switch = <OpenCircuit<'a, T>>::determine_gas_switch(&t, start_gas, self.deco_gases);
+                // println!("Vec<D> time");
+                let switch = <OpenCircuit<'a, T>>::find_gas_switch_point(
+                    &t
+                        .iter()
+                        .filter(|x| x.get_segment_type() != AscDesc)
+                        .cloned()
+                        .collect::<Vec<DiveSegment>>()
+                    ,
+                    start_gas, self.deco_gases);
                 match switch {
                     Some(u) => { // There are gas_plan switches to perform. u = target stop
                         virtual_deco = self.deco_algorithm; // Rewind to beginning of level
+                        // println!("A: {:?}\n{:?}\n", *start_gas, t);
+
+                        // println!("Switch time");
                         for i in t {
-                            if i.get_segment_type() == SegmentType::AscDesc {
-                                continue;
-                            }
-                            if i.get_end_depth() == u.0.get_end_depth() { // Replay to stop **before** u
+                            if i.get_start_depth() == u.0.get_start_depth() { // Replay to stop **before** u
                                 break;
                             }
-                            virtual_deco.add_bottom_time(&i, start_gas);
+
+                            if i.get_segment_type() != SegmentType::AscDesc {
+                                virtual_deco.add_bottom_time(&i, start_gas);
+                            }
+                            else {
+                                let normalised_segment = DiveSegment::new(SegmentType::DiveSegment,
+                                                                          i.get_end_depth(),
+                                                                          i.get_end_depth(),
+                                                                          Duration::zero(),
+                                                                          self.ascent_rate, self.descent_rate).unwrap();
+                                virtual_deco.add_bottom_time(&normalised_segment, start_gas);
+                            }
+
+                            // println!("! Current gas: {:?}, Seg: {:?}", start_gas, i);
+                            // match <OpenCircuit<'a, T>>::check_gas_swap(&[i], start_gas, self.deco_gases) {
+                            //     Some(v) => {
+                            //         stops_performed.push((i, *v));
+                            //         println!("yo!");
+                            //     }
+                            //     None => {}
+                            // }
                             stops_performed.push((i, *start_gas));
                         }
+                        // println!("We're leaving\n");
 
                         let mut new_stop_time_deco = virtual_deco; // Calculate the new stop time
+                        // println!("u0: {:?}", u.0);
                         let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                             u.0.get_start_depth(), u.0.get_end_depth(),
-                                                            0, -self.ascent_rate, self.descent_rate).unwrap();
+                                                            Duration::seconds(0), self.ascent_rate, self.descent_rate).unwrap();
                         new_stop_time_deco.add_bottom_time(&test_segment, start_gas); // Add a zero-minute stop
 
                         let new_stops = new_stop_time_deco.surface(self.ascent_rate, self.descent_rate, u.1); // Use next gas_plan on the stops
+                        // println!("newstops: {:?}", &new_stops);
+                        let mut force_add = false;
+                        let u2_time = match &new_stops[0].get_time().cmp(&Duration::minute()) {
+                            Ordering::Less => {
+                                force_add = true;
+                                Duration::minute()
+                            }
+                            _ => *{
+                                new_stops[0].get_time()
+                            }
+                        };
                         let u2 = DiveSegment::new(SegmentType::DecoStop,
                                                   u.0.get_start_depth(), u.0.get_end_depth(),
-                                                  new_stops[1].get_time(), self.ascent_rate, self.descent_rate).unwrap(); // Use the second segment (first is AscDesc)
+                                                  u2_time, self.ascent_rate, self.descent_rate).unwrap();
+                        if force_add {
+                            stops_performed.push((u2, *u.1));
+                        }
 
+                        // println!("u2: {:?}", u2);
+                        // println!("Model: {:?}", &virtual_deco);
                         // We do not push any stops or add bottom time here because function will do so already.
                         self.deco_algorithm = virtual_deco;
                         self.level_to_level(&u2, end_segment,
                                        u.1, stops_performed) // Recursively call level_to_level with the new start segment as u
                     }
                     None => { // There are deco stops to perform but no gas_plan switches necessary.
+                        // println!("B: {:?}\n{:?}\n", *start_gas, t);
                         for x in t {
+                            // println!("... Current gas: {:?}, Seg: {:?}", start_gas, &x);
+                            // match <OpenCircuit<'a, T>>::check_gas_swap(&[x], start_gas, self.deco_gases) {
+                            //     Some(u) => {
+                            //         stops_performed.push((x, *u));
+                            //         println!("yo... {:?}", u);
+                            //     }
+                            //     None => {stops_performed.push((x, *start_gas));}
+                            // }
                             stops_performed.push((x, *start_gas));
                         }
                         self.deco_algorithm = virtual_deco;
@@ -196,7 +271,7 @@ impl<'a, U: Dive<T>, T: DecoAlgorithm> GasPlan<T, U> for OpenCircuit<'a, T> {
         }
 
         // Deco segments
-        let mut virtual_dive = self.clone();
+        let mut virtual_dive = *self;
         let virtual_deco = virtual_dive.execute_dive();
         for (segment, gas) in virtual_deco {
             // TODO: Add gas consumption calculation here
