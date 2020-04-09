@@ -5,12 +5,13 @@ use crate::dive_plan::dive::Dive;
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::common::dive_segment::SegmentType::AscDesc;
 use crate::common::mtr_bar;
+use std::collections::HashMap;
 
 pub mod otu;
 pub mod tank;
 
 pub trait GasPlan<U, T: Dive<U>>: Dive<U> where U: DecoAlgorithm {
-    fn plan_forwards(&self) -> Vec<(Gas, usize)>; // Given a dive profile, how much gas do we need?
+    fn plan_forwards(&self) -> HashMap<Gas, usize>; // Given a dive profile, how much gas do we need?
     fn plan_backwards(&self, tanks: &[Tank]) -> Vec<(DiveSegment, Gas)>; // Given some amount of gas, how long can we dive?
 
     fn calculate_consumed(segment: &DiveSegment, sac_rate: usize, metres_per_bar: f64) -> usize { // Calculate gas consumed given a segment.

@@ -8,6 +8,7 @@ use crate::gas_plan::tank::Tank;
 use time::Duration;
 use crate::common::dive_segment::SegmentType::AscDesc;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuit<'a, T: DecoAlgorithm> {
@@ -223,15 +224,16 @@ impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
 }
 
 impl<'a, U: Dive<T>, T: DecoAlgorithm> GasPlan<T, U> for OpenCircuit<'a, T> {
-    fn plan_forwards(&self) -> Vec<(Gas, usize)> {  // Given a dive profile, how much gas do we need?
-        let mut gas_plan: Vec<(Gas, usize)> = Vec::new();
+    fn plan_forwards(&self) -> HashMap<Gas, usize> {  // Given a dive profile, how much gas do we need?
+        let gas_plan: HashMap<Gas, usize> = HashMap::new();
+
 
         // Bottom segments
         for (segment, gas) in self.bottom_segments {
-            gas_plan.push((
-                *gas,
-                <Self as GasPlan<T, U>>::calculate_consumed(segment, self.sac_bottom, self.metres_per_bar)
-            ))
+            // gas_plan.push((
+            //     *gas,
+            //     <Self as GasPlan<T, U>>::calculate_consumed(segment, self.sac_bottom, self.metres_per_bar)
+            // ))
         }
 
         // Deco segments

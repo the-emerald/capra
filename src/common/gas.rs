@@ -16,36 +16,48 @@ impl std::fmt::Display for GasError {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Gas {
-    fr_n2: f64,
-    fr_o2: f64,
-    fr_he: f64
+    o2: usize,
+    he: usize,
+    n2: usize
 }
 
 impl Gas {
-    pub fn new(fr_n2: f64, fr_o2: f64, fr_he: f64) -> Result<Self, GasError> {
-        if (fr_n2 + fr_o2 + fr_he - 1.0).abs() > 0.005 || !valid_pp(fr_n2) || !valid_pp(fr_o2) ||
-            !valid_pp(fr_he){
-            return Err(GasError::FractionError)
+    pub fn new(o2: usize, he: usize, n2: usize) -> Result<Self, GasError> {
+        if o2 + he + n2 != 100 {
+        return Err(GasError::FractionError)
         }
+
         Ok(Self {
-            fr_n2,
-            fr_o2,
-            fr_he
+            o2,
+            he,
+            n2
         })
     }
 
     pub fn fr_n2(&self) -> f64 {
-        self.fr_n2
+        self.n2 as f64 / 100.0
     }
 
     pub fn fr_o2(&self) -> f64 {
-        self.fr_o2
+        self.o2 as f64 / 100.0
     }
 
     pub fn fr_he(&self) -> f64 {
-        self.fr_he
+        self.he as f64 / 100.0
+    }
+
+    pub fn o2(&self) -> usize {
+        self.o2
+    }
+
+    pub fn he(&self) -> usize {
+        self.he
+    }
+
+    pub fn n2(&self) -> usize {
+        self.n2
     }
 }
 
