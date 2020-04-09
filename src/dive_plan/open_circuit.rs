@@ -101,7 +101,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                 let zero_to_t_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                          t.get_start_depth(), t.get_end_depth(),
                                                          // time_taken(self.ascent_rate, t.get_end_depth(), t.get_start_depth()),
-                                                         Duration::seconds(0),
+                                                         Duration::zero(),
                                                          self.ascent_rate, self.descent_rate).unwrap();
                 virtual_deco.add_bottom_time(&zero_to_t_segment, start_gas, self.metres_per_bar)
             }, // More stops: add the next bottom.
@@ -151,7 +151,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                         let mut new_stop_time_deco = virtual_deco; // Calculate the new stop time
                         let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                             u.0.get_start_depth(), u.0.get_end_depth(),
-                                                            Duration::seconds(0), self.ascent_rate, self.descent_rate).unwrap();
+                                                            Duration::zero(), self.ascent_rate, self.descent_rate).unwrap();
                         new_stop_time_deco.add_bottom_time(&test_segment, start_gas, self.metres_per_bar); // Add a zero-minute stop
 
                         let new_stops = new_stop_time_deco.surface(self.ascent_rate, self.descent_rate, u.1, self.metres_per_bar); // Use next gas_plan on the stops
