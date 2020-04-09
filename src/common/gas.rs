@@ -49,8 +49,8 @@ impl Gas {
     }
 }
 
-pub fn partial_pressure(depth: usize, fr: f64) -> f64 {
-    mtr_bar(depth as f64) * fr
+pub fn partial_pressure(depth: usize, fr: f64, metres_per_bar: f64) -> f64 {
+    mtr_bar(depth as f64, metres_per_bar) * fr
 }
 
 fn valid_pp(pp: f64) -> bool {
