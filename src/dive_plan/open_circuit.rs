@@ -9,6 +9,7 @@ use time::Duration;
 use crate::common::dive_segment::SegmentType::AscDesc;
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use crate::common::time_taken;
 
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuit<'a, T: DecoAlgorithm> {
@@ -103,10 +104,12 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                                                          t.get_start_depth(), t.get_end_depth(),
                                                          Duration::zero(),
                                                          self.ascent_rate, self.descent_rate).unwrap();
-                virtual_deco.add_bottom_time(&zero_to_t_segment, start_gas, self.metres_per_bar)
+                virtual_deco.add_dive_segment(&zero_to_t_segment, start_gas, self.metres_per_bar)
             },
             None => { // Next "stop" is a surface:
+                println!("Next stop is a surface:");
                 let s = virtual_deco.surface(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas, self.metres_per_bar);
+                dbg!(&s);
                 match s[0].get_segment_type() {
                     SegmentType::NoDeco => {
                         self.deco_algorithm = virtual_deco;
@@ -134,17 +137,19 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                                 break;
                             }
 
-                            if i.get_segment_type() != SegmentType::AscDesc {
-                                virtual_deco.add_bottom_time(&i, start_gas, self.metres_per_bar);
-                            }
-                            else { // Use a zero-timed, constant-end-depth segment to update model
-                                let normalised_segment = DiveSegment::new(SegmentType::DiveSegment,
-                                                                          i.get_end_depth(),
-                                                                          i.get_end_depth(),
-                                                                          Duration::zero(),
-                                                                          self.ascent_rate, self.descent_rate).unwrap();
-                                virtual_deco.add_bottom_time(&normalised_segment, start_gas, self.metres_per_bar);
-                            }
+                            virtual_deco.add_dive_segment(&i, start_gas, self.metres_per_bar);
+
+                            // if i.get_segment_type() != SegmentType::AscDesc {
+                            //     virtual_deco.add_dive_segment(&i, start_gas, self.metres_per_bar);
+                            // }
+                            // else { // Use a zero-timed, constant-end-depth segment to update model
+                            //     let normalised_segment = DiveSegment::new(SegmentType::DiveSegment,
+                            //                                               i.get_end_depth(),
+                            //                                               i.get_end_depth(),
+                            //                                               Duration::zero(),
+                            //                                               self.ascent_rate, self.descent_rate).unwrap();
+                            //     virtual_deco.add_dive_segment(&normalised_segment, start_gas, self.metres_per_bar);
+                            // }
                             stops_performed.push((i, *start_gas));
                         }
 
@@ -153,7 +158,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                         let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                             u.0.get_start_depth(), u.0.get_end_depth(),
                                                             Duration::zero(), self.ascent_rate, self.descent_rate).unwrap();
-                        new_stop_time_deco.add_bottom_time(&test_segment, start_gas, self.metres_per_bar); // Add a zero-minute stop
+                        new_stop_time_deco.add_dive_segment(&test_segment, start_gas, self.metres_per_bar); // Add a zero-minute stop
 
                         let new_stops = new_stop_time_deco.surface(self.ascent_rate, self.descent_rate, u.1, self.metres_per_bar); // Use next gas_plan on the stops
                         let mut force_add = false;
@@ -188,9 +193,19 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                     }
                 }
             }
-            None => {
-               self.deco_algorithm = virtual_deco;
-            } // There are no deco stops to perform.
+            None => { // There are no deco stops to perform.
+                let ascdesc_segment = DiveSegment::new(
+                  SegmentType::AscDesc,
+                    start_segment.get_end_depth(),
+                    end_segment.unwrap().get_start_depth(),
+                    time_taken(
+                        self.ascent_rate, start_segment.get_end_depth(), end_segment.unwrap().get_start_depth()
+                    ),
+                    self.ascent_rate, self.descent_rate
+                ).unwrap();
+                stops_performed.push((ascdesc_segment, *start_gas));
+                self.deco_algorithm = virtual_deco;
+            }
         }
     }
 }
@@ -198,22 +213,26 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
 impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
     fn execute_dive(&mut self) -> Vec<(DiveSegment, Gas)> {
         let mut total_segments: Vec<(DiveSegment, Gas)> = Vec::new();
-        if self.bottom_segments.len() != 1 { // If this is a multi-level dive then use a sliding window.
-            let windowed_segments = self.bottom_segments.windows(2);
+        // First segment is a AscDesc
+        self.deco_algorithm.add_dive_segment(&self.bottom_segments[0].0, &self.bottom_segments[0].1, self.metres_per_bar);
+        total_segments.push(self.bottom_segments[0]);
+        if self.bottom_segments.len() > 2 { // If this is a multi-level dive then use a sliding window.
+            let windowed_segments = self.bottom_segments.windows(2).skip(1);
             for win in windowed_segments {
                 let mut stops_performed: Vec<(DiveSegment, Gas)> = Vec::new();
                 let start = win[0];
                 let end = win[1];
 
-                self.deco_algorithm.add_bottom_time(&start.0, &start.1, self.metres_per_bar);
+                self.deco_algorithm.add_dive_segment(&start.0, &start.1, self.metres_per_bar);
                 total_segments.push(start);
                 self.level_to_level(&start.0, Some(&end.0), &start.1, &mut stops_performed);
                 total_segments.append(&mut stops_performed);
             }
         }
+
         // However the sliding window does not capture the final element. Convenient!
         let final_stop = self.bottom_segments.last().unwrap();
-        self.deco_algorithm.add_bottom_time(&final_stop.0, &final_stop.1, self.metres_per_bar);
+        self.deco_algorithm.add_dive_segment(&final_stop.0, &final_stop.1, self.metres_per_bar);
         total_segments.push(*final_stop);
         let mut stops_performed: Vec<(DiveSegment, Gas)> = Vec::new();
         self.level_to_level(&final_stop.0, None, &final_stop.1, &mut stops_performed);
