@@ -39,7 +39,7 @@ impl ZHL16 {
             adjusted_fr_he = tissue_gas.fr_he() * (1.0 - util::ZHL16_WATER_VAPOUR_PRESSURE)
         }
         else {
-            adjusted_fr_he = tissue_gas.fr_he()
+            adjusted_fr_he = tissue_gas.fr_he() // TODO: Refactor this to be consistent?
         }
 
         Self {
@@ -61,26 +61,32 @@ impl ZHL16 {
     }
 
     fn update_first_deco_depth(&mut self, deco_depth: usize) {
+        // Update the first deco depth of the diver. This is used to calculate the GF any given point
+        // of the decompression schedule.
         match self.first_deco_depth {
-            Some(_t) => {},
-            None => self.first_deco_depth = Some(deco_depth)
+            Some(_t) => {}, // If it's already set then don't touch it
+            None => self.first_deco_depth = Some(deco_depth) // Otherwise update it
         }
     }
 
     fn gf_at_depth(&self, depth: usize) -> f64 {
+        // Find the gradient factor to use at a given depth during decompression
         match self.first_deco_depth {
             Some(t) => {
+                // Only calculate the gradient factor if we're below the surface.
                 if depth > 0 {
                     return self.gf_high + ((self.gf_high - self.gf_low) /
                         (0.0 - t as f64)) * (depth as f64)
                 }
                 self.gf_high // We must be on the surface, by definition use gf_high
             }
-            None => self.gf_high
+            None => self.gf_high // We haven't started decompression yet. use gf_high by definition.
         }
     }
 
     fn add_depth_change(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
+        // Add a segment that has a depth change according to the Schreiner Equation.
+
         let delta_depth = (segment.get_end_depth() as isize) - (segment.get_start_depth() as isize);
         let rate;
         if delta_depth > 0 {
@@ -90,8 +96,9 @@ impl ZHL16 {
             rate = segment.get_ascent_rate()
         }
 
-        // let t: f64 = delta_depth as f64 / rate as f64;
         let t = time_taken(rate, segment.get_end_depth(), segment.get_start_depth()).whole_seconds() as f64 / 60.0;
+
+        // Load nitrogen tissue compartments
         for (idx, val) in self.p_n2.iter_mut().enumerate() {
             let po = *val;
             let pio: f64 = ZHL16::compensated_pressure(segment.get_end_depth(), metres_per_bar) * gas.fr_n2();
@@ -102,6 +109,7 @@ impl ZHL16 {
             self.p_t[idx] = pn;
         }
 
+        // Load helium tissue compartments
         for (idx, val) in self.p_he.iter_mut().enumerate() {
             let po = *val;
             let pio: f64 = ZHL16::compensated_pressure(segment.get_end_depth(), metres_per_bar) * gas.fr_he();
@@ -111,7 +119,7 @@ impl ZHL16 {
             *val = ph;
             self.p_t[idx] += ph;
         }
-        self.diver_depth = segment.get_end_depth();
+        self.diver_depth = segment.get_end_depth(); // Update diver depth
     }
 
     fn compensated_pressure(depth: usize, metres_per_bar: f64) -> f64 {
@@ -185,7 +193,7 @@ impl ZHL16 {
                             gas: &Gas, metres_per_bar: f64) -> DiveSegment {
         let stop_depth = (3.0*(
             (common::bar_mtr(self.find_ascent_ceiling(None), metres_per_bar)/3.0)
-                .ceil())) as usize;
+                .ceil())) as usize; // Find the next stop depth rounded to 3m
         let mut stop_time: usize = 0;
         let mut in_limit: bool = false;
         while !in_limit {
@@ -251,19 +259,25 @@ impl ZHL16 {
 impl DecoAlgorithm for ZHL16 {
     fn add_dive_segment(&mut self, segment: &common::dive_segment::DiveSegment,
                         gas: &Gas, metres_per_bar: f64) -> Option<Vec<DiveSegment>> {
+
+        // There may be intermediate stops between the current state and the diver!
         let intermediate_stops = self.get_stops(
             segment.get_ascent_rate(), segment.get_descent_rate(), gas, metres_per_bar);
-        let mut used_stops:Vec<DiveSegment> = Vec::new();
 
+        let mut used_stops:Vec<DiveSegment> = Vec::new(); // Keep track of the stops we used
+
+        // TODO: Check if this check will always result in correct behaviour.
         if intermediate_stops.iter().any(|x| x.get_segment_type() == SegmentType::DecoStop) {
             for stop in intermediate_stops.iter() {
                 if stop.get_end_depth() > segment.get_end_depth() { // Deco stop is below desired depth
+                    // Replay the segment
                     self.apply_segment(stop, gas, metres_per_bar);
                     self.update_first_deco_depth(stop.get_end_depth());
                     used_stops.push((*stop).clone());
                 }
             }
         }
+        // Apply the actual segment we wanted
         self.apply_segment(segment, gas, metres_per_bar);
 
         if used_stops.is_empty() {
@@ -276,7 +290,7 @@ impl DecoAlgorithm for ZHL16 {
 
     fn surface(&mut self, ascent_rate: isize, descent_rate: isize, gas: &Gas, metres_per_bar: f64) -> Vec<DiveSegment> {
         let mut stops: Vec<DiveSegment> = Vec::new();
-
+        // If the ascent ceiling with a GFH override is less than 1.0 then we're in NDL times
         if self.find_ascent_ceiling(Some(self.gf_high)) < 1.0 {
             match self.ndl(gas, metres_per_bar) {
                 Some(t) => {
@@ -289,6 +303,7 @@ impl DecoAlgorithm for ZHL16 {
 
         let mut last_depth = self.diver_depth;
         while self.find_ascent_ceiling(None) > 1.0 {
+            // Find the next stop and apply it.
             let stop = self.next_stop(ascent_rate, descent_rate, gas, metres_per_bar);
             self.update_first_deco_depth(stop.get_end_depth());
             self.apply_segment(&stop, gas, metres_per_bar);
