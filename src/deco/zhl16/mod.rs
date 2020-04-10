@@ -190,7 +190,6 @@ impl ZHL16 {
         let mut in_limit: bool = false;
         while !in_limit {
             let mut virtual_zhl16 = *self;
-            dbg!(self.diver_depth);
             let depth_change_segment = DiveSegment::new(SegmentType::AscDesc,
                                                         virtual_zhl16.diver_depth,
                                                         stop_depth,
@@ -200,25 +199,15 @@ impl ZHL16 {
             let segment = DiveSegment::new(SegmentType::DecoStop,
                                            stop_depth, stop_depth,
                                            Duration::minutes(stop_time as i64), ascent_rate, descent_rate).unwrap();
-            dbg!(&depth_change_segment);
-            dbg!(&segment);
-            println!("----\n");
+
             virtual_zhl16.apply_segment(&depth_change_segment, gas, metres_per_bar);
             virtual_zhl16.apply_segment(&segment, gas, metres_per_bar);
             virtual_zhl16.update_first_deco_depth(segment.get_end_depth());
-            dbg!(virtual_zhl16.find_ascent_ceiling(None));
-
-            dbg!(common::mtr_bar(stop_depth as f64, metres_per_bar));
-            dbg!((common::mtr_bar(3.0, metres_per_bar) - 1.0));
-
-            dbg!(0.3);
 
             in_limit = virtual_zhl16.find_ascent_ceiling(None) < common::mtr_bar(stop_depth as f64, metres_per_bar)
                 - (common::mtr_bar(3.0, metres_per_bar) - 1.0);
-            dbg!(in_limit);
             stop_time += 1;
         }
-        println!("Ok we're done here");
         DiveSegment::new(SegmentType::DecoStop, stop_depth, stop_depth,
                          Duration::minutes(stop_time as i64), ascent_rate, descent_rate).unwrap()
     }
@@ -251,7 +240,6 @@ impl ZHL16 {
         match segment.get_segment_type() {
             SegmentType::AscDesc => {
                 self.add_depth_change(segment, gas, metres_per_bar);
-                // self.diver_depth = segment.get_end_depth()
             }
             _ => {
                 self.add_bottom_segment(segment, gas, metres_per_bar);
@@ -301,28 +289,27 @@ impl DecoAlgorithm for ZHL16 {
 
         let mut last_depth = self.diver_depth;
         while self.find_ascent_ceiling(None) > 1.0 {
-            dbg!(self.find_ascent_ceiling(None));
-            println!("Next stop:");
             let stop = self.next_stop(ascent_rate, descent_rate, gas, metres_per_bar);
             self.update_first_deco_depth(stop.get_end_depth());
-            // Do the deco stop
             self.apply_segment(&stop, gas, metres_per_bar);
 
-            dbg!(last_depth);
-            dbg!(stop.get_end_depth());
-            let depth_change_segment = DiveSegment::new(SegmentType::AscDesc,
-                                                   last_depth, stop.get_end_depth(),
-                                                        time_taken(
-                                                            ascent_rate,
-                                                            stop.get_end_depth(),
-                                                            last_depth
-                                                        ), ascent_rate, descent_rate).unwrap();
-            self.apply_segment(&depth_change_segment, gas, metres_per_bar);
-            stops.push(depth_change_segment);
-
+            // This is done because of the nature of segment processing!
+            // If a diver has just ascended from 18m to 15m, for example, their depth would be
+            // at 15m, yet the next stop will be 15m. In that case, do not generate an AscDesc
+            // segment.
+            if last_depth != stop.get_end_depth() {
+                let depth_change_segment = DiveSegment::new(SegmentType::AscDesc,
+                                                            last_depth, stop.get_end_depth(),
+                                                            time_taken(
+                                                                ascent_rate,
+                                                                stop.get_end_depth(),
+                                                                last_depth
+                                                            ), ascent_rate, descent_rate).unwrap();
+                self.apply_segment(&depth_change_segment, gas, metres_per_bar);
+                stops.push(depth_change_segment);
+            }
 
             last_depth = stop.get_end_depth();
-            self.diver_depth = last_depth;
             stops.push(stop);
         }
         stops

@@ -97,6 +97,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         }
 
         let mut virtual_deco = self.deco_algorithm;
+        let mut enforce_segment_gas = false;
         let intermediate_stops = match end_segment { // Check if there are intermediate stops
             Some(t) => {  // There are more stops.
                 // Use a zero-timed segment to find intermediate stops.
@@ -104,12 +105,11 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                                                          t.get_start_depth(), t.get_end_depth(),
                                                          Duration::zero(),
                                                          self.ascent_rate, self.descent_rate).unwrap();
+                enforce_segment_gas = true;
                 virtual_deco.add_dive_segment(&zero_to_t_segment, start_gas, self.metres_per_bar)
             },
             None => { // Next "stop" is a surface:
-                println!("Next stop is a surface:");
                 let s = virtual_deco.surface(start_segment.get_ascent_rate(), start_segment.get_descent_rate(), start_gas, self.metres_per_bar);
-                dbg!(&s);
                 match s[0].get_segment_type() {
                     SegmentType::NoDeco => {
                         self.deco_algorithm = virtual_deco;
@@ -121,14 +121,21 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         };
         match intermediate_stops {
             Some(t) => { // There are deco stops to perform.
-                let switch = <OpenCircuit<'a, T>>::find_gas_switch_point(
-                    &t
-                        .iter()
-                        .filter(|x| x.get_segment_type() != AscDesc)
-                        .cloned()
-                        .collect::<Vec<DiveSegment>>()
-                    ,
-                    start_gas, self.deco_gases, self.metres_per_bar);
+                let switch: Option<(DiveSegment, &Gas)> = match enforce_segment_gas {
+                    true => {
+                        None
+                    }
+                    false => {
+                        <OpenCircuit<'a, T>>::find_gas_switch_point(
+                            &t
+                                .iter()
+                                .filter(|x| x.get_segment_type() != AscDesc)
+                                .cloned()
+                                .collect::<Vec<DiveSegment>>()
+                            ,
+                            start_gas, self.deco_gases, self.metres_per_bar)
+                    }
+                };
                 match switch {
                     Some(u) => { // There are gas switches to perform, and u = target stop
                         virtual_deco = self.deco_algorithm; // Rewind to beginning of level
@@ -136,24 +143,10 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                             if i.get_start_depth() == u.0.get_start_depth() { // Replay to stop **before** u
                                 break;
                             }
-
                             virtual_deco.add_dive_segment(&i, start_gas, self.metres_per_bar);
-
-                            // if i.get_segment_type() != SegmentType::AscDesc {
-                            //     virtual_deco.add_dive_segment(&i, start_gas, self.metres_per_bar);
-                            // }
-                            // else { // Use a zero-timed, constant-end-depth segment to update model
-                            //     let normalised_segment = DiveSegment::new(SegmentType::DiveSegment,
-                            //                                               i.get_end_depth(),
-                            //                                               i.get_end_depth(),
-                            //                                               Duration::zero(),
-                            //                                               self.ascent_rate, self.descent_rate).unwrap();
-                            //     virtual_deco.add_dive_segment(&normalised_segment, start_gas, self.metres_per_bar);
-                            // }
                             stops_performed.push((i, *start_gas));
                         }
 
-                        // Now that we are using a new gas at stop u, we must recalculate the new stop time.
                         let mut new_stop_time_deco = virtual_deco;
                         let test_segment = DiveSegment::new(SegmentType::DiveSegment,
                                                             u.0.get_start_depth(), u.0.get_end_depth(),
