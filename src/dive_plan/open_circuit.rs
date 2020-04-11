@@ -204,10 +204,12 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
 }
 
 impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
-    fn execute_dive(&mut self) -> Vec<(DiveSegment, Gas)> {
+    fn execute_dive(&self) -> (T, Vec<(DiveSegment, Gas)>) {
         let mut total_segments: Vec<(DiveSegment, Gas)> = Vec::new();
+        let mut virtual_dive = *self;
+
         // First segment is a AscDesc
-        self.deco_algorithm.add_dive_segment(&self.bottom_segments[0].0, &self.bottom_segments[0].1, self.metres_per_bar);
+        virtual_dive.deco_algorithm.add_dive_segment(&self.bottom_segments[0].0, &self.bottom_segments[0].1, self.metres_per_bar);
         total_segments.push(self.bottom_segments[0]);
         if self.bottom_segments.len() > 2 { // If this is a multi-level dive then use a sliding window.
             let windowed_segments = self.bottom_segments.windows(2).skip(1);
@@ -216,46 +218,43 @@ impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
                 let start = win[0];
                 let end = win[1];
 
-                self.deco_algorithm.add_dive_segment(&start.0, &start.1, self.metres_per_bar);
+                virtual_dive.deco_algorithm.add_dive_segment(&start.0, &start.1, self.metres_per_bar);
                 total_segments.push(start);
-                self.level_to_level(&start.0, Some(&end.0), &start.1, &mut stops_performed);
+                virtual_dive.level_to_level(&start.0, Some(&end.0), &start.1, &mut stops_performed);
                 total_segments.append(&mut stops_performed);
             }
         }
 
         // However the sliding window does not capture the final element. Convenient!
         let final_stop = self.bottom_segments.last().unwrap();
-        self.deco_algorithm.add_dive_segment(&final_stop.0, &final_stop.1, self.metres_per_bar);
+        virtual_dive.deco_algorithm.add_dive_segment(&final_stop.0, &final_stop.1, self.metres_per_bar);
         total_segments.push(*final_stop);
         let mut stops_performed: Vec<(DiveSegment, Gas)> = Vec::new();
-        self.level_to_level(&final_stop.0, None, &final_stop.1, &mut stops_performed);
+        virtual_dive.level_to_level(&final_stop.0, None, &final_stop.1, &mut stops_performed);
         total_segments.append(&mut stops_performed);
-        total_segments
+        (virtual_dive.deco_algorithm, total_segments)
     }
 
-    fn finish(self) -> T {
-        self.deco_algorithm
-    }
+    // fn finish(self) -> T {
+    //     self.deco_algorithm
+    // }
 }
 
-impl<'a, U: Dive<T>, T: DecoAlgorithm> GasPlan<T, U> for OpenCircuit<'a, T> {
+// impl<'a, U: Dive<T>, T: DecoAlgorithm> GasPlan<T, U> for OpenCircuit<'a, T> {
+impl<'a, T: DecoAlgorithm> GasPlan<T> for OpenCircuit<'a, T> {
     fn plan_forwards(&self) -> HashMap<Gas, usize> {  // Given a dive profile, how much gas do we need?
-        let gas_plan: HashMap<Gas, usize> = HashMap::new();
-
-
-        // Bottom segments
-        for (segment, gas) in self.bottom_segments {
-            // gas_plan.push((
-            //     *gas,
-            //     <Self as GasPlan<T, U>>::calculate_consumed(segment, self.sac_bottom, self.metres_per_bar)
-            // ))
-        }
-
-        // Deco segments
+        let mut gas_plan: HashMap<Gas, usize> = HashMap::new();
         let mut virtual_dive = *self;
-        let virtual_deco = virtual_dive.execute_dive();
-        for (segment, gas) in virtual_deco {
-            // TODO: Add gas consumption calculation here
+        let all_segments = virtual_dive.execute_dive().1;
+
+        // All segments
+        for (segment, gas) in all_segments {
+            let gas_consumed = match segment.get_segment_type() {
+                SegmentType::DecoStop => <Self as GasPlan<T>>::calculate_consumed(&segment, self.sac_deco, self.metres_per_bar),
+                _ => <Self as GasPlan<T>>::calculate_consumed(&segment, self.sac_bottom, self.metres_per_bar)
+            };
+            let gas_needed = *(gas_plan.entry(gas).or_insert(0)) + gas_consumed;
+            gas_plan.insert(gas, gas_needed);
         }
         gas_plan
     }
