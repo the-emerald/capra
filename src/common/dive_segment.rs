@@ -13,7 +13,7 @@ impl std::fmt::Display for DiveSegmentError {
     fn fmt(&self, f: &mut std::fmt::Formatter)
            -> std::fmt::Result {
         match self {
-            DiveSegmentError::IncorrectSegmentTypeError => write!(f, "Segment was not AscDesc but start and end depth did not match."),
+            DiveSegmentError::IncorrectSegmentTypeError => write!(f, "segment type and depths are inconsistent"),
         }
     }
 }
@@ -37,8 +37,14 @@ pub struct DiveSegment {
 impl DiveSegment {
     pub fn new(segment_type: SegmentType, start_depth: usize, end_depth: usize, time: Duration,
                ascent_rate: isize, descent_rate: isize) -> Result<Self, DiveSegmentError> {
-        if segment_type != AscDesc && start_depth != end_depth {
-            return Err(IncorrectSegmentTypeError)
+
+        // Only allow AscDesc segments with a differing start/end depth.
+        // As well as any other segment type without a consistent start/end depth,
+        match (segment_type, start_depth == end_depth) {
+            (AscDesc, true) => return Err(IncorrectSegmentTypeError),
+            (AscDesc, false) => {} // Needed to completely match AscDesc
+            (_, false) => return Err(IncorrectSegmentTypeError),
+            _ => {}
         }
 
         Ok(Self {

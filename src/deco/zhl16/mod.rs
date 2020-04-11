@@ -198,17 +198,19 @@ impl ZHL16 {
         let mut in_limit: bool = false;
         while !in_limit {
             let mut virtual_zhl16 = *self;
-            let depth_change_segment = DiveSegment::new(SegmentType::AscDesc,
-                                                        virtual_zhl16.diver_depth,
-                                                        stop_depth,
-                                                        time_taken(ascent_rate, virtual_zhl16.diver_depth, stop_depth),
-                                                        ascent_rate, descent_rate).unwrap();
-
+            // This is done for the exact same reason as the check in the surface implementation.
+            if virtual_zhl16.diver_depth != stop_depth {
+                let depth_change_segment = DiveSegment::new(SegmentType::AscDesc,
+                                                            virtual_zhl16.diver_depth,
+                                                            stop_depth,
+                                                            time_taken(ascent_rate, virtual_zhl16.diver_depth, stop_depth),
+                                                            ascent_rate, descent_rate).unwrap();
+                virtual_zhl16.apply_segment(&depth_change_segment, gas, metres_per_bar);
+            }
             let segment = DiveSegment::new(SegmentType::DecoStop,
                                            stop_depth, stop_depth,
                                            Duration::minutes(stop_time as i64), ascent_rate, descent_rate).unwrap();
 
-            virtual_zhl16.apply_segment(&depth_change_segment, gas, metres_per_bar);
             virtual_zhl16.apply_segment(&segment, gas, metres_per_bar);
             virtual_zhl16.update_first_deco_depth(segment.get_end_depth());
 
