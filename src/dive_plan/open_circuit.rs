@@ -234,18 +234,12 @@ impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
         total_segments.append(&mut stops_performed);
         (virtual_dive.deco_algorithm, total_segments)
     }
-
-    // fn finish(self) -> T {
-    //     self.deco_algorithm
-    // }
 }
 
-// impl<'a, U: Dive<T>, T: DecoAlgorithm> GasPlan<T, U> for OpenCircuit<'a, T> {
 impl<'a, T: DecoAlgorithm> GasPlan<T> for OpenCircuit<'a, T> {
     fn plan_forwards(&self) -> HashMap<Gas, usize> {  // Given a dive profile, how much gas do we need?
         let mut gas_plan: HashMap<Gas, usize> = HashMap::new();
-        let mut virtual_dive = *self;
-        let all_segments = virtual_dive.execute_dive().1;
+        let all_segments = self.execute_dive().1;
 
         // All segments
         for (segment, gas) in all_segments {
