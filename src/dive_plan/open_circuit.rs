@@ -97,7 +97,6 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         }
 
         let mut virtual_deco = self.deco_algorithm;
-        let mut enforce_segment_gas = false;
         let intermediate_stops = match end_segment { // Check if there are intermediate stops
             Some(t) => {  // There are more stops.
                 // Use a zero-timed segment to find intermediate stops.
@@ -105,7 +104,6 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                                                          t.get_start_depth(), t.get_end_depth(),
                                                          Duration::zero(),
                                                          self.ascent_rate, self.descent_rate).unwrap();
-                enforce_segment_gas = true;
                 virtual_deco.add_dive_segment(&zero_to_t_segment, start_gas, self.metres_per_bar)
             },
             None => { // Next "stop" is a surface:
@@ -121,11 +119,11 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         };
         match intermediate_stops {
             Some(t) => { // There are deco stops to perform.
-                let switch: Option<(DiveSegment, &Gas)> = match enforce_segment_gas {
-                    true => {
+                let switch: Option<(DiveSegment, &Gas)> = match end_segment {
+                    Some(_) => {
                         None
                     }
-                    false => {
+                    None => {
                         <OpenCircuit<'a, T>>::find_gas_switch_point(
                             &t
                                 .iter()
