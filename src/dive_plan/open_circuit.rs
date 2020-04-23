@@ -43,25 +43,23 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
     }
 
     fn filter_gases<'b>(segment: &DiveSegment, gases: &'b [(Gas, Option<usize>)], metres_per_bar: f64) -> Vec<&'b Gas> {
-        let mut candidates = Vec::new();
-        for gas in gases { // Do not push any candidates that are deeper than MOD
-            match gas.1 {
-                Some(t) => {
-                    if t >= segment.get_start_depth() {
-                        candidates.push(&gas.0);
-                    }
-                }
-                None => {
-                    candidates.push(&gas.0)
-                }
-            }
-        }
+        let mut candidates = gases
+            .iter()
+            .filter(|x| x.1
+                .map_or(true, |t| t >= segment.get_start_depth()))
+            .map(|x| &x.0)
+            .collect::<Vec<&Gas>>();
 
-        candidates = candidates.into_iter().filter(|a|
-            gas_in_ppo2_range(segment.get_start_depth(), PPO2_MINIMUM, PPO2_MAXIMUM_DECO, a, metres_per_bar)).collect(); // filter gases not in ppo2 range
+        candidates = candidates
+            .into_iter()
+            .filter(|a|
+                gas_in_ppo2_range(segment.get_start_depth(), PPO2_MINIMUM, PPO2_MAXIMUM_DECO, a, metres_per_bar))
+            .collect(); // filter gases not in ppo2 range
 
-        candidates = candidates.into_iter().filter(|a|
-            equivalent_narcotic_depth(segment.get_start_depth(), a) <= segment.get_start_depth()).collect(); // filter gases over E.N.D.
+        candidates = candidates.into_iter()
+            .filter(|a|
+                equivalent_narcotic_depth(segment.get_start_depth(), a) <= segment.get_start_depth())
+            .collect(); // filter gases over E.N.D.
 
         candidates.sort_by(|a, b|
             partial_pressure(segment.get_start_depth(), a.fr_o2(), metres_per_bar)
