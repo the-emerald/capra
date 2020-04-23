@@ -265,49 +265,6 @@ impl DecoAlgorithm for ZHL16 {
         }
     }
 
-    // fn add_segment(&mut self, segment: &common::dive_segment::DiveSegment,
-    //                gas: &Gas, metres_per_bar: f64) -> Vec<DiveSegment> {
-    //
-    //     // There may be intermediate stops between the current state and the diver!
-    //     let intermediate_stops = self.get_stops(
-    //         segment.get_ascent_rate(), segment.get_descent_rate(), gas, metres_per_bar);
-    //
-    //     let mut used_segs:Vec<DiveSegment> = Vec::new(); // Keep track of the stops we used
-    //
-    //     // If there are deco stops that are deeper than the segment:
-    //     if intermediate_stops.iter().any(|x| x.get_segment_type() == SegmentType::DecoStop && x.get_start_depth() > segment.get_start_depth()) {
-    //         // Apply them one by one until ready to begin next segment
-    //         for stop in intermediate_stops.iter().take_while(|x| x.get_start_depth() > segment.get_start_depth()) {
-    //             self.add_dive_segment(stop, gas, metres_per_bar);
-    //             self.update_first_deco_depth(stop.get_end_depth());
-    //             used_segs.push(*stop);
-    //         }
-    //     }
-    //     else {
-    //         // Otherwise make an depth change to the next bottom segment
-    //         // If we're not already there, obviously!
-    //         if segment.get_start_depth() != self.diver_depth {
-    //             let ascent_rate = match self.diver_depth.cmp(&segment.get_start_depth()) {
-    //                 Ordering::Less => segment.get_ascent_rate(),
-    //                 _ => segment.get_descent_rate()
-    //             };
-    //
-    //             let asc_desc_to_segment = DiveSegment::new(
-    //                 SegmentType::AscDesc,
-    //                 self.diver_depth,
-    //                 segment.get_start_depth(),
-    //                 time_taken(ascent_rate, self.diver_depth, segment.get_start_depth()),
-    //                 segment.get_ascent_rate(), segment.get_descent_rate()
-    //             ).unwrap();
-    //             self.add_dive_segment(&asc_desc_to_segment, gas, metres_per_bar);
-    //         }
-    //     }
-    //
-    //     // Apply the actual segment we wanted
-    //     self.add_dive_segment(segment, gas, metres_per_bar);
-    //     used_segs
-    // }
-
     fn surface(&mut self, ascent_rate: isize, descent_rate: isize, gas: &Gas, metres_per_bar: f64) -> Vec<DiveSegment> {
         let mut stops: Vec<DiveSegment> = Vec::new();
         // If the ascent ceiling with a GFH override is less than 1.0 then we're in NDL times

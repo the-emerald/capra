@@ -5,7 +5,6 @@ use crate::common::dive_segment::DiveSegment;
 
 pub trait DecoAlgorithm: Copy + Clone + Debug {
     fn add_dive_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64);
-    // fn add_segment(&mut self, segment: &dive_segment::DiveSegment, gas: &Gas, metres_per_bar: f64) -> Vec<dive_segment::DiveSegment>;
     fn surface(&mut self, ascent_rate: isize, descent_rate: isize, gas: &Gas, metres_per_bar: f64) -> Vec<dive_segment::DiveSegment>;
     fn get_stops(&self, ascent_rate: isize, descent_rate: isize, gas: &Gas, metres_per_bar: f64) -> Vec<dive_segment::DiveSegment> {
         let mut virtual_deco = *self;
