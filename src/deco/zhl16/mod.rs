@@ -5,6 +5,8 @@ use crate::common::gas::Gas;
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use time::Duration;
 use crate::common::time_taken;
+use crate::common::dive_segment::SegmentType::DecoStop;
+use std::cmp::Ordering;
 
 pub mod util;
 
@@ -205,13 +207,13 @@ impl ZHL16 {
                                                             stop_depth,
                                                             time_taken(ascent_rate, virtual_zhl16.diver_depth, stop_depth),
                                                             ascent_rate, descent_rate).unwrap();
-                virtual_zhl16.apply_segment(&depth_change_segment, gas, metres_per_bar);
+                virtual_zhl16.add_dive_segment(&depth_change_segment, gas, metres_per_bar);
             }
             let segment = DiveSegment::new(SegmentType::DecoStop,
                                            stop_depth, stop_depth,
                                            Duration::minutes(stop_time as i64), ascent_rate, descent_rate).unwrap();
 
-            virtual_zhl16.apply_segment(&segment, gas, metres_per_bar);
+            virtual_zhl16.add_dive_segment(&segment, gas, metres_per_bar);
             virtual_zhl16.update_first_deco_depth(segment.get_end_depth());
 
             in_limit = virtual_zhl16.find_ascent_ceiling(None) < common::mtr_bar(stop_depth as f64, metres_per_bar)
@@ -245,50 +247,66 @@ impl ZHL16 {
         Some(DiveSegment::new(SegmentType::NoDeco, self.diver_depth,
                               self.diver_depth, Duration::minutes(ndl), 0, 0).unwrap())
     }
+}
 
-    pub(crate) fn apply_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
+impl DecoAlgorithm for ZHL16 {
+    fn add_dive_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
         match segment.get_segment_type() {
             SegmentType::AscDesc => {
-                self.add_depth_change(segment, gas, metres_per_bar);
+                self.add_depth_change(segment ,gas, metres_per_bar);
+            }
+            SegmentType::DecoStop => {
+                self.add_bottom_segment(segment, gas, metres_per_bar);
+                self.update_first_deco_depth(segment.get_start_depth());
             }
             _ => {
                 self.add_bottom_segment(segment, gas, metres_per_bar);
             }
         }
     }
-}
 
-impl DecoAlgorithm for ZHL16 {
-    fn add_dive_segment(&mut self, segment: &common::dive_segment::DiveSegment,
-                        gas: &Gas, metres_per_bar: f64) -> Option<Vec<DiveSegment>> {
-
-        // There may be intermediate stops between the current state and the diver!
-        let intermediate_stops = self.get_stops(
-            segment.get_ascent_rate(), segment.get_descent_rate(), gas, metres_per_bar);
-
-        let mut used_stops:Vec<DiveSegment> = Vec::new(); // Keep track of the stops we used
-
-        // TODO: Check if this check will always result in correct behaviour.
-        if intermediate_stops.iter().any(|x| x.get_segment_type() == SegmentType::DecoStop) {
-            for stop in intermediate_stops.iter() {
-                if stop.get_end_depth() > segment.get_end_depth() { // Deco stop is below desired depth
-                    // Replay the segment
-                    self.apply_segment(stop, gas, metres_per_bar);
-                    self.update_first_deco_depth(stop.get_end_depth());
-                    used_stops.push((*stop).clone());
-                }
-            }
-        }
-        // Apply the actual segment we wanted
-        self.apply_segment(segment, gas, metres_per_bar);
-
-        if used_stops.is_empty() {
-            None
-        }
-        else {
-            Some(used_stops)
-        }
-    }
+    // fn add_segment(&mut self, segment: &common::dive_segment::DiveSegment,
+    //                gas: &Gas, metres_per_bar: f64) -> Vec<DiveSegment> {
+    //
+    //     // There may be intermediate stops between the current state and the diver!
+    //     let intermediate_stops = self.get_stops(
+    //         segment.get_ascent_rate(), segment.get_descent_rate(), gas, metres_per_bar);
+    //
+    //     let mut used_segs:Vec<DiveSegment> = Vec::new(); // Keep track of the stops we used
+    //
+    //     // If there are deco stops that are deeper than the segment:
+    //     if intermediate_stops.iter().any(|x| x.get_segment_type() == SegmentType::DecoStop && x.get_start_depth() > segment.get_start_depth()) {
+    //         // Apply them one by one until ready to begin next segment
+    //         for stop in intermediate_stops.iter().take_while(|x| x.get_start_depth() > segment.get_start_depth()) {
+    //             self.add_dive_segment(stop, gas, metres_per_bar);
+    //             self.update_first_deco_depth(stop.get_end_depth());
+    //             used_segs.push(*stop);
+    //         }
+    //     }
+    //     else {
+    //         // Otherwise make an depth change to the next bottom segment
+    //         // If we're not already there, obviously!
+    //         if segment.get_start_depth() != self.diver_depth {
+    //             let ascent_rate = match self.diver_depth.cmp(&segment.get_start_depth()) {
+    //                 Ordering::Less => segment.get_ascent_rate(),
+    //                 _ => segment.get_descent_rate()
+    //             };
+    //
+    //             let asc_desc_to_segment = DiveSegment::new(
+    //                 SegmentType::AscDesc,
+    //                 self.diver_depth,
+    //                 segment.get_start_depth(),
+    //                 time_taken(ascent_rate, self.diver_depth, segment.get_start_depth()),
+    //                 segment.get_ascent_rate(), segment.get_descent_rate()
+    //             ).unwrap();
+    //             self.add_dive_segment(&asc_desc_to_segment, gas, metres_per_bar);
+    //         }
+    //     }
+    //
+    //     // Apply the actual segment we wanted
+    //     self.add_dive_segment(segment, gas, metres_per_bar);
+    //     used_segs
+    // }
 
     fn surface(&mut self, ascent_rate: isize, descent_rate: isize, gas: &Gas, metres_per_bar: f64) -> Vec<DiveSegment> {
         let mut stops: Vec<DiveSegment> = Vec::new();
@@ -308,7 +326,7 @@ impl DecoAlgorithm for ZHL16 {
             // Find the next stop and apply it.
             let stop = self.next_stop(ascent_rate, descent_rate, gas, metres_per_bar);
             self.update_first_deco_depth(stop.get_end_depth());
-            self.apply_segment(&stop, gas, metres_per_bar);
+            self.add_dive_segment(&stop, gas, metres_per_bar);
 
             // This is done because of the nature of segment processing!
             // If a diver has just ascended from 18m to 15m, for example, their depth would be
@@ -322,7 +340,7 @@ impl DecoAlgorithm for ZHL16 {
                                                                 stop.get_end_depth(),
                                                                 last_depth
                                                             ), ascent_rate, descent_rate).unwrap();
-                self.apply_segment(&depth_change_segment, gas, metres_per_bar);
+                self.add_dive_segment(&depth_change_segment, gas, metres_per_bar);
                 stops.push(depth_change_segment);
             }
 
