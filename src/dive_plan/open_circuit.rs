@@ -100,7 +100,8 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                         self.ascent_rate,
                         self.descent_rate
                     ).unwrap();
-                    self.deco_algorithm.add_dive_segment(&descent, &t.1, self.metres_per_bar);
+                    self.deco_algorithm.add_dive_segment(&descent, &start.1, self.metres_per_bar);
+                    stops_performed.push((descent, start.1));
                     return;
                 }
                 Ordering::Equal => {
@@ -147,8 +148,24 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
             }
 
             // At gas switch point, use new gas and calculate new deco schedule
-            let new_stop = virtual_deco.get_stops(self.ascent_rate, self.descent_rate, switch.1, self.metres_per_bar)
-                .into_iter().find(|x| x.get_segment_type() == DecoStop).expect("no deco wtf");
+            let new_stop = match virtual_deco
+                .get_stops(self.ascent_rate, self.descent_rate, &switch.1, self.metres_per_bar)
+                .into_iter()
+                .find(|x|
+                    x.get_segment_type() == DecoStop && x.get_start_depth() == switch.0.get_start_depth()) {
+                Some(t) => t,
+                None => {
+                    DiveSegment::new(
+                        SegmentType::DecoStop,
+                        switch.0.get_start_depth(),
+                        switch.0.get_end_depth(),
+                        Duration::minute(),
+                        self.ascent_rate,
+                        self.descent_rate
+                    ).unwrap()
+                }
+            };
+
             virtual_deco.add_dive_segment(&new_stop, switch.1, self.metres_per_bar);
             stops_performed.push((new_stop, *switch.1));
 
