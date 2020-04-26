@@ -98,12 +98,12 @@ impl ZHL16 {
             rate = segment.get_ascent_rate()
         }
 
-        let t = time_taken(rate, segment.get_end_depth(), segment.get_start_depth()).whole_seconds() as f64 / 60.0;
+        let t = segment.get_time().whole_seconds() as f64 / 60.0;
 
         // Load nitrogen tissue compartments
         for (idx, val) in self.p_n2.iter_mut().enumerate() {
             let po = *val;
-            let pio: f64 = ZHL16::compensated_pressure(segment.get_end_depth(), metres_per_bar) * gas.fr_n2();
+            let pio: f64 = ZHL16::compensated_pressure(segment.get_start_depth(), metres_per_bar) * gas.fr_n2();
             let r = (rate as f64 / 10.0) * gas.fr_n2();
             let k = LN_2 / self.n2_hl[idx];
             let pn: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
@@ -114,7 +114,7 @@ impl ZHL16 {
         // Load helium tissue compartments
         for (idx, val) in self.p_he.iter_mut().enumerate() {
             let po = *val;
-            let pio: f64 = ZHL16::compensated_pressure(segment.get_end_depth(), metres_per_bar) * gas.fr_he();
+            let pio: f64 = ZHL16::compensated_pressure(segment.get_start_depth(), metres_per_bar) * gas.fr_he();
             let r = (rate as f64 / 10.0) * gas.fr_he();
             let k = LN_2 / self.he_hl[idx];
             let ph: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
@@ -131,7 +131,7 @@ impl ZHL16 {
     fn depth_change_loading(time: f64, initial_pressure: f64, initial_ambient_pressure: f64,
                             r: f64, k: f64) -> f64 {
         initial_ambient_pressure + r * (time - (1.0 / k)) -
-            (initial_ambient_pressure - initial_pressure - (r / k)) * E.powf(-1.0 * k * time)
+            ((initial_ambient_pressure - initial_pressure - (r / k)) * E.powf(-1.0 * k * time))
     }
 
     fn add_bottom_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
@@ -283,7 +283,6 @@ impl DecoAlgorithm for ZHL16 {
             // Find the next stop and apply it.
             let stop = self.next_stop(ascent_rate, descent_rate, gas, metres_per_bar);
             self.update_first_deco_depth(stop.get_end_depth());
-            self.add_dive_segment(&stop, gas, metres_per_bar);
 
             // This is done because of the nature of segment processing!
             // If a diver has just ascended from 18m to 15m, for example, their depth would be
@@ -301,7 +300,11 @@ impl DecoAlgorithm for ZHL16 {
                 stops.push(depth_change_segment);
             }
 
+            self.add_dive_segment(&stop, gas, metres_per_bar);
+            self.update_first_deco_depth(stop.get_end_depth());
+
             last_depth = stop.get_end_depth();
+
             stops.push(stop);
         }
         stops
