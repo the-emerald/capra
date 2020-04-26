@@ -71,7 +71,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
 
     fn find_gas_switch_point<'c>(segments: &'c [DiveSegment], current_gas: &Gas, gases: &'c [(Gas, Option<usize>)], metres_per_bar: f64) -> Option<(&'c DiveSegment, &'c Gas)> {
         // Best gas_plan is the gas_plan that has the highest ppO2 (not over max allowed), and not over equivalent_narcotic_depth.
-        for stop in segments {
+        for stop in segments.iter().filter(|x| x.get_segment_type() != AscDesc) {
             let candidate_gases = <OpenCircuit<'a, T>>::filter_gases(stop, gases, metres_per_bar);
             if candidate_gases.is_empty(){ // there no fitting candidate gases.
                 continue;
