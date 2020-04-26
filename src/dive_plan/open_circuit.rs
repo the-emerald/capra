@@ -83,9 +83,9 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         None
     }
 
-    pub(crate) fn level_to_level(&mut self, start: &(DiveSegment, Gas),
+    pub(crate) fn level_to_level(&self, mut deco: T, start: &(DiveSegment, Gas),
                                  end: Option<&(DiveSegment, Gas)>,
-                                 stops_performed: &mut Vec<(DiveSegment, Gas)>) {
+                                 stops_performed: &mut Vec<(DiveSegment, Gas)>) -> T {
 
         // Check if there is any depth change
         if let Some(t) = end {
@@ -100,19 +100,19 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                         self.ascent_rate,
                         self.descent_rate
                     ).unwrap();
-                    self.deco_algorithm.add_dive_segment(&descent, &start.1, self.metres_per_bar);
+                    deco.add_dive_segment(&descent, &start.1, self.metres_per_bar);
                     stops_performed.push((descent, start.1));
-                    return;
+                    return deco;
                 }
                 Ordering::Equal => {
                     // There cannot be any more segments to add.
-                    return;
+                    return deco;
                 },
                 Ordering::Greater => {} // Continue to main algorithm
             }
         }
 
-        let mut virtual_deco = self.deco_algorithm;
+        let mut virtual_deco = deco;
         // Find the stops between start and end using start gas
         let end_depth = match end {
             Some(t) => t.0.get_start_depth(),
@@ -139,7 +139,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         if stops.iter().any(|x| x.get_segment_type() == DecoStop) && switch_point.is_some() {
             let switch = switch_point.unwrap();
             // Rewind the algorithm
-            virtual_deco = self.deco_algorithm;
+            virtual_deco = deco;
 
             // Replay between stops until gas switch point
             for stop in stops.iter().take_while(|x| x.get_start_depth() > switch.0.get_start_depth()) {
@@ -170,14 +170,15 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
             stops_performed.push((new_stop, *switch.1));
 
             // Call recursively with first new gas stop as start, end same
-            self.deco_algorithm = virtual_deco;
-            self.level_to_level(&(new_stop, *switch.1), end, stops_performed);
+            deco = virtual_deco;
+            self.level_to_level(deco, &(new_stop, *switch.1), end, stops_performed)
         }
         else {
             // Push segments and return
             // TODO: Check NDL behaviour?
             stops_performed.append(&mut stops.into_iter().zip(iter::repeat(start.1)).collect());
-            self.deco_algorithm = virtual_deco;
+            deco = virtual_deco;
+            deco
         }
     }
 }
@@ -185,7 +186,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
 impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
     fn execute_dive(&self) -> (T, Vec<(DiveSegment, Gas)>) {
         let mut total_segments: Vec<(DiveSegment, Gas)> = Vec::new();
-        let mut virtual_dive = *self;
+        let mut deco = self.deco_algorithm;
 
         // Create the AscDesc to the first segment
         let descent_to_beginning = DiveSegment::new(
@@ -199,7 +200,7 @@ impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
             self.descent_rate
         ).unwrap();
 
-        virtual_dive.deco_algorithm.add_dive_segment(&descent_to_beginning, &self.bottom_segments[0].1, self.metres_per_bar);
+        deco.add_dive_segment(&descent_to_beginning, &self.bottom_segments[0].1, self.metres_per_bar);
         total_segments.push((descent_to_beginning, self.bottom_segments[0].1));
 
         for win in self.bottom_segments.windows(2) {
@@ -207,23 +208,23 @@ impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
             let start = win[0];
             let end = win[1];
 
-            virtual_dive.deco_algorithm.add_dive_segment(&start.0, &start.1, self.metres_per_bar);
+            deco.add_dive_segment(&start.0, &start.1, self.metres_per_bar);
             total_segments.push(start);
 
-            virtual_dive.level_to_level(&start, Some(&end),&mut stops_performed);
+            deco = self.level_to_level(deco, &start, Some(&end),&mut stops_performed);
             total_segments.append(&mut stops_performed);
         }
 
         // However the sliding window does not capture the final element.
         let final_stop = self.bottom_segments.last().unwrap();
-        virtual_dive.deco_algorithm.add_dive_segment(&final_stop.0, &final_stop.1, self.metres_per_bar);
+        deco.add_dive_segment(&final_stop.0, &final_stop.1, self.metres_per_bar);
         total_segments.push(*final_stop);
 
         let mut stops_performed: Vec<(DiveSegment, Gas)> = Vec::new();
-        virtual_dive.level_to_level(&final_stop, None, &mut stops_performed);
+        deco = self.level_to_level(deco, &final_stop, None, &mut stops_performed);
         total_segments.append(&mut stops_performed);
 
-        (virtual_dive.deco_algorithm, total_segments)
+        (deco, total_segments)
     }
 }
 
