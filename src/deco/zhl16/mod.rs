@@ -157,16 +157,15 @@ impl ZHL16 {
 
     pub(crate) fn find_ascent_ceiling(&self, gf_override: Option<f64>) -> f64 {
         let mut ceilings: [f64; TISSUE_COUNT] = [0.0; TISSUE_COUNT];
-        let gf;
-        match gf_override {
-            Some(t) => gf = t,
+        let gf = match gf_override {
+            Some(t) => t,
             None => {
                 match self.first_deco_depth {
-                    Some(_t) => gf = self.gf_at_depth(self.diver_depth),
-                    None => gf = self.gf_low
+                    Some(_) => self.gf_at_depth(self.diver_depth),
+                    None => self.gf_low
                 }
             }
-        }
+        };
 
         for (idx, val) in ceilings.iter_mut().enumerate() {
             let a = self.tissue_a_value(idx);
