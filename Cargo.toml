@@ -12,3 +12,4 @@ path = "src/lib.rs"
 
 [dependencies]
 time = "0.2.9"
+num-traits = "0.2.11"
