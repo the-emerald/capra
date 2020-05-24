@@ -7,9 +7,9 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use crate::common::time_taken;
 use std::iter;
-use crate::planning::gasplan::GasPlan;
-use crate::planning::diveplan::{gas_in_ppo2_range, PPO2_MINIMUM, PPO2_MAXIMUM_DECO, DivePlan};
 use crate::common::tank::Tank;
+use crate::planning::{DivePlan, gas_in_ppo2_range, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
+use crate::planning::diveresult::DiveResult;
 
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuit<'a, T: DecoAlgorithm> {
@@ -183,7 +183,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
 }
 
 impl<'a, T: DecoAlgorithm> DivePlan<T> for OpenCircuit<'a, T> {
-    fn execute_dive(&self) -> (T, Vec<(DiveSegment, Gas)>) {
+    fn plan(&self) -> DiveResult<T> {
         let mut total_segments: Vec<(DiveSegment, Gas)> = Vec::new();
         let mut deco = self.deco_algorithm;
 
@@ -223,28 +223,21 @@ impl<'a, T: DecoAlgorithm> DivePlan<T> for OpenCircuit<'a, T> {
         deco = self.level_to_level(deco, &final_stop, None, &mut stops_performed);
         total_segments.append(&mut stops_performed);
 
-        (deco, total_segments)
-    }
-}
-
-impl<'a, T: DecoAlgorithm> GasPlan<T> for OpenCircuit<'a, T> {
-    fn plan_forwards(&self) -> HashMap<Gas, usize> {  // Given a dive profile, how much gas do we need?
+        // Gas planning
         let mut gas_plan: HashMap<Gas, usize> = HashMap::new();
-        let all_segments = self.execute_dive().1;
-
-        // All segments
-        for (segment, gas) in all_segments {
+        for (segment, gas) in &total_segments {
             let gas_consumed = match segment.segment_type() {
-                SegmentType::DecoStop => <Self as GasPlan<T>>::calculate_consumed(&segment, self.sac_deco, self.metres_per_bar),
-                _ => <Self as GasPlan<T>>::calculate_consumed(&segment, self.sac_bottom, self.metres_per_bar)
+                SegmentType::DecoStop => segment.gas_consumed(self.sac_deco, self.metres_per_bar),
+                _ => segment.gas_consumed(self.sac_bottom, self.metres_per_bar)
             };
-            let gas_needed = *(gas_plan.entry(gas).or_insert(0)) + gas_consumed;
-            gas_plan.insert(gas, gas_needed);
+            let gas_needed = *(gas_plan.entry(*gas).or_insert(0)) + gas_consumed;
+            gas_plan.insert(*gas, gas_needed);
         }
-        gas_plan
+
+        DiveResult::new(deco, total_segments, gas_plan)
     }
 
-    fn plan_backwards(&self, tanks: &[Tank]) -> Vec<(DiveSegment, Gas)> {
-        unimplemented!() // TODO: Implement backwards planning
+    fn plan_backwards(&self, tanks: &[Tank]) -> DiveResult<T> {
+        unimplemented!()
     }
 }

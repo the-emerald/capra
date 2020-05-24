@@ -1,6 +1,7 @@
 use crate::common::dive_segment::SegmentType::AscDesc;
 use crate::common::dive_segment::DiveSegmentError::IncorrectSegmentTypeError;
 use time::Duration;
+use crate::common::mtr_bar;
 
 #[derive(Debug)]
 pub enum DiveSegmentError {
@@ -79,5 +80,14 @@ impl DiveSegment {
 
     pub fn descent_rate(&self) -> isize {
         self.descent_rate
+    }
+
+    pub fn gas_consumed(&self, sac_rate: usize, metres_per_bar: f64) -> usize { // Calculate gas consumed given a segment.
+        let pressure = match self.segment_type() {
+            AscDesc => mtr_bar(((self.end_depth() + self.start_depth()) / 2) as f64, metres_per_bar),
+            _ => mtr_bar(self.end_depth() as f64, metres_per_bar)
+        };
+
+        (pressure * (self.time().as_seconds_f64()/60.0) * sac_rate as f64) as usize
     }
 }
