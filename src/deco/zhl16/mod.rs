@@ -89,21 +89,21 @@ impl ZHL16 {
     fn add_depth_change(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
         // Add a segment that has a depth change according to the Schreiner Equation.
 
-        let delta_depth = (segment.get_end_depth() as isize) - (segment.get_start_depth() as isize);
+        let delta_depth = (segment.end_depth() as isize) - (segment.start_depth() as isize);
         let rate;
         if delta_depth > 0 {
-            rate = segment.get_descent_rate()
+            rate = segment.descent_rate()
         }
         else {
-            rate = segment.get_ascent_rate()
+            rate = segment.ascent_rate()
         }
 
-        let t = segment.get_time().whole_seconds() as f64 / 60.0;
+        let t = segment.time().whole_seconds() as f64 / 60.0;
 
         // Load nitrogen tissue compartments
         for (idx, val) in self.p_n2.iter_mut().enumerate() {
             let po = *val;
-            let pio: f64 = ZHL16::compensated_pressure(segment.get_start_depth(), metres_per_bar) * gas.fr_n2();
+            let pio: f64 = ZHL16::compensated_pressure(segment.start_depth(), metres_per_bar) * gas.fr_n2();
             let r = (rate as f64 / 10.0) * gas.fr_n2();
             let k = LN_2 / self.n2_hl[idx];
             let pn: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
@@ -114,14 +114,14 @@ impl ZHL16 {
         // Load helium tissue compartments
         for (idx, val) in self.p_he.iter_mut().enumerate() {
             let po = *val;
-            let pio: f64 = ZHL16::compensated_pressure(segment.get_start_depth(), metres_per_bar) * gas.fr_he();
+            let pio: f64 = ZHL16::compensated_pressure(segment.start_depth(), metres_per_bar) * gas.fr_he();
             let r = (rate as f64 / 10.0) * gas.fr_he();
             let k = LN_2 / self.he_hl[idx];
             let ph: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
             *val = ph;
             self.p_t[idx] += ph;
         }
-        self.diver_depth = segment.get_end_depth(); // Update diver depth
+        self.diver_depth = segment.end_depth(); // Update diver depth
     }
 
     fn compensated_pressure(depth: usize, metres_per_bar: f64) -> f64 {
@@ -137,22 +137,22 @@ impl ZHL16 {
     fn add_bottom_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
         for (idx, val) in self.p_n2.iter_mut().enumerate() {
             let po = *val;
-            let pi = ZHL16::compensated_pressure(segment.get_end_depth(), metres_per_bar) * gas.fr_n2();
+            let pi = ZHL16::compensated_pressure(segment.end_depth(), metres_per_bar) * gas.fr_n2();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f64.powf(-1.0*segment.get_time().whole_minutes() as f64 / self.n2_hl[idx])));
+                (1.0 - (2.0_f64.powf(-1.0*segment.time().whole_minutes() as f64 / self.n2_hl[idx])));
             *val = p;
             self.p_t[idx] = p;
         }
 
         for (idx, val) in self.p_he.iter_mut().enumerate() {
             let po = *val;
-            let pi = ZHL16::compensated_pressure(segment.get_end_depth(), metres_per_bar) * gas.fr_he();
+            let pi = ZHL16::compensated_pressure(segment.end_depth(), metres_per_bar) * gas.fr_he();
             let p = po + (pi - po) *
-                (1.0 - (2.0_f64.powf(-1.0*segment.get_time().whole_minutes() as f64 / self.he_hl[idx])));
+                (1.0 - (2.0_f64.powf(-1.0*segment.time().whole_minutes() as f64 / self.he_hl[idx])));
             *val = p;
             self.p_t[idx] += p;
         }
-        self.diver_depth = segment.get_end_depth();
+        self.diver_depth = segment.end_depth();
     }
 
     pub(crate) fn find_ascent_ceiling(&self, gf_override: Option<f64>) -> f64 {
@@ -213,7 +213,7 @@ impl ZHL16 {
                                            Duration::minutes(stop_time as i64), ascent_rate, descent_rate).unwrap();
 
             virtual_zhl16.add_dive_segment(&segment, gas, metres_per_bar);
-            virtual_zhl16.update_first_deco_depth(segment.get_end_depth());
+            virtual_zhl16.update_first_deco_depth(segment.end_depth());
 
             in_limit = virtual_zhl16.find_ascent_ceiling(None) < common::mtr_bar(stop_depth as f64, metres_per_bar)
                 - (common::mtr_bar(3.0, metres_per_bar) - 1.0);
@@ -250,13 +250,13 @@ impl ZHL16 {
 
 impl DecoAlgorithm for ZHL16 {
     fn add_dive_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
-        match segment.get_segment_type() {
+        match segment.segment_type() {
             SegmentType::AscDesc => {
                 self.add_depth_change(segment ,gas, metres_per_bar);
             }
             SegmentType::DecoStop => {
                 self.add_bottom_segment(segment, gas, metres_per_bar);
-                self.update_first_deco_depth(segment.get_start_depth());
+                self.update_first_deco_depth(segment.start_depth());
             }
             _ => {
                 self.add_bottom_segment(segment, gas, metres_per_bar);
@@ -281,18 +281,18 @@ impl DecoAlgorithm for ZHL16 {
         while self.find_ascent_ceiling(None) > 1.0 {
             // Find the next stop and apply it.
             let stop = self.next_stop(ascent_rate, descent_rate, gas, metres_per_bar);
-            self.update_first_deco_depth(stop.get_end_depth());
+            self.update_first_deco_depth(stop.end_depth());
 
             // This is done because of the nature of segment processing!
             // If a diver has just ascended from 18m to 15m, for example, their depth would be
             // at 15m, yet the next stop will be 15m. In that case, do not generate an AscDesc
             // segment.
-            if last_depth != stop.get_end_depth() {
+            if last_depth != stop.end_depth() {
                 let depth_change_segment = DiveSegment::new(SegmentType::AscDesc,
-                                                            last_depth, stop.get_end_depth(),
+                                                            last_depth, stop.end_depth(),
                                                             time_taken(
                                                                 ascent_rate,
-                                                                stop.get_end_depth(),
+                                                                stop.end_depth(),
                                                                 last_depth
                                                             ), ascent_rate, descent_rate).unwrap();
                 self.add_dive_segment(&depth_change_segment, gas, metres_per_bar);
@@ -300,9 +300,9 @@ impl DecoAlgorithm for ZHL16 {
             }
 
             self.add_dive_segment(&stop, gas, metres_per_bar);
-            self.update_first_deco_depth(stop.get_end_depth());
+            self.update_first_deco_depth(stop.end_depth());
 
-            last_depth = stop.get_end_depth();
+            last_depth = stop.end_depth();
 
             stops.push(stop);
         }

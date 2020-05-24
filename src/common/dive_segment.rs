@@ -57,27 +57,27 @@ impl DiveSegment {
         })
     }
 
-    pub fn get_segment_type(&self) -> SegmentType {
+    pub fn segment_type(&self) -> SegmentType {
         self.segment_type
     }
 
-    pub fn get_start_depth(&self) -> usize {
+    pub fn start_depth(&self) -> usize {
         self.start_depth
     }
 
-    pub fn get_end_depth(&self) -> usize {
+    pub fn end_depth(&self) -> usize {
         self.end_depth
     }
 
-    pub fn get_time(&self) -> &Duration {
+    pub fn time(&self) -> &Duration {
         &self.time
     }
 
-    pub fn get_ascent_rate(&self) -> isize {
+    pub fn ascent_rate(&self) -> isize {
         self.ascent_rate
     }
 
-    pub fn get_descent_rate(&self) -> isize {
+    pub fn descent_rate(&self) -> isize {
         self.descent_rate
     }
 }
