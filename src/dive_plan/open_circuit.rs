@@ -1,6 +1,6 @@
 use crate::common::dive_segment::{DiveSegment, SegmentType};
 use crate::dive_plan::dive::Dive;
-use crate::dive_plan::{gas_in_ppo2_range, equivalent_narcotic_depth, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
+use crate::dive_plan::{gas_in_ppo2_range, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::common::gas::{Gas, partial_pressure};
 use crate::gas_plan::GasPlan;
@@ -58,7 +58,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
 
         candidates = candidates.into_iter()
             .filter(|a|
-                equivalent_narcotic_depth(segment.get_start_depth(), a) <= segment.get_start_depth())
+                a.equivalent_narcotic_depth(segment.get_start_depth()) <= segment.get_start_depth())
             .collect(); // filter gases over E.N.D.
 
         candidates.sort_by(|a, b|
