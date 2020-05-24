@@ -1,16 +1,15 @@
 use crate::common::dive_segment::{DiveSegment, SegmentType};
-use crate::dive_plan::dive::Dive;
-use crate::dive_plan::{gas_in_ppo2_range, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::common::gas::{Gas};
-use crate::gas_plan::GasPlan;
-use crate::gas_plan::tank::Tank;
 use time::Duration;
 use crate::common::dive_segment::SegmentType::{AscDesc, DecoStop};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use crate::common::time_taken;
 use std::iter;
+use crate::planning::gasplan::GasPlan;
+use crate::planning::diveplan::{gas_in_ppo2_range, PPO2_MINIMUM, PPO2_MAXIMUM_DECO, DivePlan};
+use crate::common::tank::Tank;
 
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuit<'a, T: DecoAlgorithm> {
@@ -70,7 +69,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
     }
 
     fn find_gas_switch_point<'c>(segments: &'c [DiveSegment], current_gas: &Gas, gases: &'c [(Gas, Option<usize>)], metres_per_bar: f64) -> Option<(&'c DiveSegment, &'c Gas)> {
-        // Best gas_plan is the gas_plan that has the highest ppO2 (not over max allowed), and not over equivalent_narcotic_depth.
+        // Best gasplan is the gasplan that has the highest ppO2 (not over max allowed), and not over equivalent_narcotic_depth.
         for stop in segments.iter().filter(|x| x.segment_type() != AscDesc) {
             let candidate_gases = <OpenCircuit<'a, T>>::filter_gases(stop, gases, metres_per_bar);
             if candidate_gases.is_empty(){ // there no fitting candidate gases.
@@ -183,7 +182,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
     }
 }
 
-impl<'a, T: DecoAlgorithm> Dive<T> for OpenCircuit<'a, T> {
+impl<'a, T: DecoAlgorithm> DivePlan<T> for OpenCircuit<'a, T> {
     fn execute_dive(&self) -> (T, Vec<(DiveSegment, Gas)>) {
         let mut total_segments: Vec<(DiveSegment, Gas)> = Vec::new();
         let mut deco = self.deco_algorithm;

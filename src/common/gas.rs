@@ -11,7 +11,7 @@ impl std::fmt::Display for GasError {
     fn fmt(&self, f: &mut std::fmt::Formatter)
            -> std::fmt::Result {
         match self {
-            GasError::FractionError => write!(f, "Gas does not have total gas_plan fraction of 1.0"),
+            GasError::FractionError => write!(f, "Gas does not have total fraction of 1.0"),
         }
     }
 }

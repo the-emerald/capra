@@ -11,6 +11,7 @@ pub const DENSITY_SALTWATER: f64 = 1023.6;
 
 pub mod dive_segment;
 pub mod gas;
+pub mod tank;
 
 pub fn bar_mtr(bar: f64, metres_per_bar: f64) -> f64 {
     (bar-1.0) * metres_per_bar
