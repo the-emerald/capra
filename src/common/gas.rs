@@ -63,10 +63,10 @@ impl Gas {
     pub fn equivalent_narcotic_depth(&self, depth: usize) -> usize {
         (((depth + 10) as f64 * (1.0 - self.fr_he())) - 10.0) as usize
     }
-}
 
-pub fn partial_pressure(depth: usize, fr: f64, metres_per_bar: f64) -> f64 {
-    mtr_bar(depth as f64, metres_per_bar) * fr
+    pub fn partial_pressure(depth: usize, fr: f64, metres_per_bar: f64) -> f64 {
+        mtr_bar(depth as f64, metres_per_bar) * fr
+    }
 }
 
 fn valid_pp(pp: f64) -> bool {

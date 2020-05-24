@@ -5,8 +5,6 @@ use crate::common::gas::Gas;
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use time::Duration;
 use crate::common::time_taken;
-use crate::common::dive_segment::SegmentType::DecoStop;
-use std::cmp::Ordering;
 
 pub mod util;
 

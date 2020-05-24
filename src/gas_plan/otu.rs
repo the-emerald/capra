@@ -1,5 +1,5 @@
 use crate::common::dive_segment::{DiveSegment, SegmentType};
-use crate::common::gas::{partial_pressure, Gas};
+use crate::common::gas::{Gas};
 
 // TODO: Refactor OTU calculations!
 // pub fn calculate_otu(segments: &[(DiveSegment, Gas)]) -> f64 {

@@ -2,7 +2,7 @@ use crate::common::dive_segment::{DiveSegment, SegmentType};
 use crate::dive_plan::dive::Dive;
 use crate::dive_plan::{gas_in_ppo2_range, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
 use crate::deco::deco_algorithm::DecoAlgorithm;
-use crate::common::gas::{Gas, partial_pressure};
+use crate::common::gas::{Gas};
 use crate::gas_plan::GasPlan;
 use crate::gas_plan::tank::Tank;
 use time::Duration;
@@ -53,7 +53,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         candidates = candidates
             .into_iter()
             .filter(|a|
-                gas_in_ppo2_range(segment.start_depth(), PPO2_MINIMUM, PPO2_MAXIMUM_DECO, a, metres_per_bar))
+                gas_in_ppo2_range(segment.start_depth(), PPO2_MINIMUM, PPO2_MAXIMUM_DECO, a))
             .collect(); // filter gases not in ppo2 range
 
         candidates = candidates.into_iter()
@@ -62,8 +62,8 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
             .collect(); // filter gases over E.N.D.
 
         candidates.sort_by(|a, b|
-            partial_pressure(segment.start_depth(), a.fr_o2(), metres_per_bar)
-                .partial_cmp(&partial_pressure(segment.start_depth(), b.fr_o2(), metres_per_bar))
+            Gas::partial_pressure(segment.start_depth(), a.fr_o2(), metres_per_bar)
+                .partial_cmp(&Gas::partial_pressure(segment.start_depth(), b.fr_o2(), metres_per_bar))
                 .unwrap()); // sort by descending order of ppo2
 
         candidates
