@@ -1,19 +1,9 @@
 use crate::common::mtr_bar;
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum GasError {
+    #[error("gas does not have total fraction of 1.0")]
     FractionError
-}
-
-impl std::error::Error for GasError {}
-
-impl std::fmt::Display for GasError {
-    fn fmt(&self, f: &mut std::fmt::Formatter)
-           -> std::fmt::Result {
-        match self {
-            GasError::FractionError => write!(f, "Gas does not have total fraction of 1.0"),
-        }
-    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]

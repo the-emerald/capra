@@ -3,20 +3,10 @@ use crate::common::dive_segment::DiveSegmentError::IncorrectSegmentTypeError;
 use time::Duration;
 use crate::common::mtr_bar;
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum DiveSegmentError {
+    #[error("segment type and start/end depths are inconsistent")]
     IncorrectSegmentTypeError
-}
-
-impl std::error::Error for DiveSegmentError {}
-
-impl std::fmt::Display for DiveSegmentError {
-    fn fmt(&self, f: &mut std::fmt::Formatter)
-           -> std::fmt::Result {
-        match self {
-            DiveSegmentError::IncorrectSegmentTypeError => write!(f, "segment type and depths are inconsistent"),
-        }
-    }
 }
 
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
