@@ -13,6 +13,14 @@ pub struct Gas {
     n2: usize
 }
 
+macro_rules! gas {
+    ($o2:expr, $he:expr) => {
+        {
+            Gas::new($o2, $he, 100 - $o2 - $he).unwrap();
+        }
+    };
+}
+
 impl Gas {
     pub fn new(o2: usize, he: usize, n2: usize) -> Result<Self, GasError> {
         if o2 + he + n2 != 100 {
