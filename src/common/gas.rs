@@ -13,10 +13,11 @@ pub struct Gas {
     n2: usize
 }
 
+#[macro_export]
 macro_rules! gas {
     ($o2:expr, $he:expr) => {
         {
-            Gas::new($o2, $he, 100 - $o2 - $he).unwrap();
+            Gas::new($o2, $he, 100 - $o2 - $he).unwrap()
         }
     };
 }
