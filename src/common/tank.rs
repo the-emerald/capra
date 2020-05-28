@@ -1,5 +1,7 @@
 use crate::common::gas::Gas;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Tank {
     gas: Gas,
     raw_volume: usize, // How much physical space there is in the tank?

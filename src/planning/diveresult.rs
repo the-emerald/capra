@@ -3,6 +3,8 @@ use crate::common::dive_segment::DiveSegment;
 use crate::common::gas::Gas;
 use std::collections::HashMap;
 
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Debug)]
 pub struct DiveResult<T: DecoAlgorithm> {
     deco_algorithm: T,
     total_segments: Vec<(DiveSegment, Gas)>,
