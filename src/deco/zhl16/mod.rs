@@ -11,7 +11,7 @@ pub mod util;
 const TISSUE_COUNT: usize = 16;
 
 #[derive(Debug, Copy, Clone)]
-#[cfg_attr(serde, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZHL16 {
     p_n2: [f64; TISSUE_COUNT],
     p_he: [f64; TISSUE_COUNT],

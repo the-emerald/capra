@@ -11,10 +11,10 @@ name = "capra"
 path = "src/lib.rs"
 
 [dependencies]
-time = { version = "0.2.16", features = ["serde"] }
+time = "0.2.16"
 num-traits = "0.2.11"
 thiserror = "1.0.19"
-serde = { version = "1.0.110", optional = true, features = ["derive"]}
+serde = { version = "1.0.110", optional = true}
 
 [features]
-use-serde = ["serde"]
+use-serde = ["serde/derive", "time/serde"]
