@@ -1,56 +1,71 @@
 use crate::common::mtr_bar;
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum GasError {
+    #[error("gas does not have total fraction of 1.0")]
     FractionError
 }
 
-impl std::error::Error for GasError {}
-
-impl std::fmt::Display for GasError {
-    fn fmt(&self, f: &mut std::fmt::Formatter)
-           -> std::fmt::Result {
-        match self {
-            GasError::FractionError => write!(f, "Gas does not have total gas_plan fraction of 1.0"),
-        }
-    }
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Gas {
+    o2: usize,
+    he: usize,
+    n2: usize
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Gas {
-    fr_n2: f64,
-    fr_o2: f64,
-    fr_he: f64
+#[macro_export]
+macro_rules! gas {
+    ($o2:expr, $he:expr) => {
+        {
+            Gas::new($o2, $he, 100 - $o2 - $he).unwrap()
+        }
+    };
 }
 
 impl Gas {
-    pub fn new(fr_n2: f64, fr_o2: f64, fr_he: f64) -> Result<Self, GasError> {
-        if (fr_n2 + fr_o2 + fr_he - 1.0).abs() > 0.005 || !valid_pp(fr_n2) || !valid_pp(fr_o2) ||
-            !valid_pp(fr_he){
-            return Err(GasError::FractionError)
+    pub fn new(o2: usize, he: usize, n2: usize) -> Result<Self, GasError> {
+        if o2 + he + n2 != 100 {
+        return Err(GasError::FractionError)
         }
+
         Ok(Self {
-            fr_n2,
-            fr_o2,
-            fr_he
+            o2,
+            he,
+            n2
         })
     }
 
     pub fn fr_n2(&self) -> f64 {
-        self.fr_n2
+        self.n2 as f64 / 100.0
     }
 
     pub fn fr_o2(&self) -> f64 {
-        self.fr_o2
+        self.o2 as f64 / 100.0
     }
 
     pub fn fr_he(&self) -> f64 {
-        self.fr_he
+        self.he as f64 / 100.0
     }
-}
 
-pub fn partial_pressure(depth: usize, fr: f64) -> f64 {
-    mtr_bar(depth as f64) * fr
+    pub fn o2(&self) -> usize {
+        self.o2
+    }
+
+    pub fn he(&self) -> usize {
+        self.he
+    }
+
+    pub fn n2(&self) -> usize {
+        self.n2
+    }
+
+    pub fn equivalent_narcotic_depth(&self, depth: usize) -> usize {
+        (((depth + 10) as f64 * (1.0 - self.fr_he())) - 10.0) as usize
+    }
+
+    pub fn partial_pressure(depth: usize, fr: f64, metres_per_bar: f64) -> f64 {
+        mtr_bar(depth as f64, metres_per_bar) * fr
+    }
 }
 
 fn valid_pp(pp: f64) -> bool {
