@@ -1,10 +1,10 @@
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::common::gas::Gas;
 use crate::common::tank::Tank;
-use crate::planning::diveresult::DiveResult;
+use crate::planning::dive_result::DiveResult;
 
 pub mod modes;
-pub mod diveresult;
+pub mod dive_result;
 pub mod otu;
 
 pub const PPO2_MINIMUM: f64 = 0.18;

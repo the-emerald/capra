@@ -9,7 +9,7 @@ use crate::common::time_taken;
 use std::iter;
 use crate::common::tank::Tank;
 use crate::planning::{DivePlan, gas_in_ppo2_range, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
-use crate::planning::diveresult::DiveResult;
+use crate::planning::dive_result::DiveResult;
 
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuit<'a, T: DecoAlgorithm> {
