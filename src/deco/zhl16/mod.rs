@@ -6,15 +6,14 @@ use crate::deco::deco_algorithm::DecoAlgorithm;
 use time::Duration;
 use crate::common::time_taken;
 use crate::deco::{TISSUE_COUNT, WATER_VAPOUR_PRESSURE};
+use crate::deco::tissue::Tissue;
 
 pub mod util;
 
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZHL16 {
-    p_n2: [f64; TISSUE_COUNT],
-    p_he: [f64; TISSUE_COUNT],
-    p_t: [f64; TISSUE_COUNT],
+    tissue: Tissue,
     diver_depth: usize,
     n2_a: [f64; TISSUE_COUNT],
     n2_b: [f64; TISSUE_COUNT],
@@ -29,23 +28,18 @@ pub struct ZHL16 {
 }
 
 impl ZHL16 {
-    pub fn new(tissue_gas: &Gas, n2_a: [f64; TISSUE_COUNT], n2_b: [f64; TISSUE_COUNT],
-               n2_hl: [f64; TISSUE_COUNT], he_a: [f64;TISSUE_COUNT], he_b: [f64;TISSUE_COUNT],
-               he_hl: [f64;TISSUE_COUNT], gf_low: usize, gf_high: usize) -> Self {
-
-        let adjusted_fr_n2 = tissue_gas.fr_n2() * (1.0 - WATER_VAPOUR_PRESSURE);
-        let adjusted_fr_he;
-        if tissue_gas.fr_he() >= WATER_VAPOUR_PRESSURE {
-            adjusted_fr_he = tissue_gas.fr_he() * (1.0 - WATER_VAPOUR_PRESSURE)
-        }
-        else {
-            adjusted_fr_he = tissue_gas.fr_he() // TODO: Refactor this to be consistent?
-        }
+    pub fn new(tissue: Tissue,
+               n2_a: [f64; TISSUE_COUNT],
+               n2_b: [f64; TISSUE_COUNT],
+               n2_hl: [f64; TISSUE_COUNT],
+               he_a: [f64;TISSUE_COUNT],
+               he_b: [f64;TISSUE_COUNT],
+               he_hl: [f64;TISSUE_COUNT],
+               gf_low: usize,
+               gf_high: usize) -> Self {
 
         Self {
-            p_n2: [adjusted_fr_n2; TISSUE_COUNT],
-            p_he: [adjusted_fr_he; TISSUE_COUNT],
-            p_t: [adjusted_fr_n2 + adjusted_fr_he; TISSUE_COUNT],
+            tissue,
             diver_depth: 0,
             n2_a,
             n2_b,
@@ -99,25 +93,25 @@ impl ZHL16 {
         let t = segment.time().whole_seconds() as f64 / 60.0;
 
         // Load nitrogen tissue compartments
-        for (idx, val) in self.p_n2.iter_mut().enumerate() {
+        for (idx, val) in self.tissue.p_n2.iter_mut().enumerate() {
             let po = *val;
             let pio: f64 = ZHL16::compensated_pressure(segment.start_depth(), metres_per_bar) * gas.fr_n2();
             let r = (rate as f64 / 10.0) * gas.fr_n2();
             let k = LN_2 / self.n2_hl[idx];
             let pn: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
             *val = pn;
-            self.p_t[idx] = pn;
+            self.tissue.p_t[idx] = pn;
         }
 
         // Load helium tissue compartments
-        for (idx, val) in self.p_he.iter_mut().enumerate() {
+        for (idx, val) in self.tissue.p_he.iter_mut().enumerate() {
             let po = *val;
             let pio: f64 = ZHL16::compensated_pressure(segment.start_depth(), metres_per_bar) * gas.fr_he();
             let r = (rate as f64 / 10.0) * gas.fr_he();
             let k = LN_2 / self.he_hl[idx];
             let ph: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
             *val = ph;
-            self.p_t[idx] += ph;
+            self.tissue.p_t[idx] += ph;
         }
         self.diver_depth = segment.end_depth(); // Update diver depth
     }
@@ -133,22 +127,22 @@ impl ZHL16 {
     }
 
     fn add_bottom_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
-        for (idx, val) in self.p_n2.iter_mut().enumerate() {
+        for (idx, val) in self.tissue.p_n2.iter_mut().enumerate() {
             let po = *val;
             let pi = ZHL16::compensated_pressure(segment.end_depth(), metres_per_bar) * gas.fr_n2();
             let p = po + (pi - po) *
                 (1.0 - (2.0_f64.powf(-1.0*segment.time().whole_minutes() as f64 / self.n2_hl[idx])));
             *val = p;
-            self.p_t[idx] = p;
+            self.tissue.p_t[idx] = p;
         }
 
-        for (idx, val) in self.p_he.iter_mut().enumerate() {
+        for (idx, val) in self.tissue.p_he.iter_mut().enumerate() {
             let po = *val;
             let pi = ZHL16::compensated_pressure(segment.end_depth(), metres_per_bar) * gas.fr_he();
             let p = po + (pi - po) *
                 (1.0 - (2.0_f64.powf(-1.0*segment.time().whole_minutes() as f64 / self.he_hl[idx])));
             *val = p;
-            self.p_t[idx] += p;
+            self.tissue.p_t[idx] += p;
         }
         self.diver_depth = segment.end_depth();
     }
@@ -175,17 +169,17 @@ impl ZHL16 {
     }
 
     fn tissue_ceiling(&self, gf: f64, x: usize, a: f64, b: f64) -> f64 {
-        ((self.p_n2[x] + self.p_he[x]) - (a * gf)) / (gf / b + 1.0 - gf)
+        ((self.tissue.p_n2[x] + self.tissue.p_he[x]) - (a * gf)) / (gf / b + 1.0 - gf)
     }
 
     fn tissue_b_value(&self, x: usize) -> f64 {
-        (self.n2_b[x] * self.p_n2[x] + self.he_b[x] * self.p_he[x]) /
-            (self.p_n2[x] + self.p_he[x])
+        (self.n2_b[x] * self.tissue.p_n2[x] + self.he_b[x] * self.tissue.p_he[x]) /
+            (self.tissue.p_n2[x] + self.tissue.p_he[x])
     }
 
     fn tissue_a_value(&self, x: usize) -> f64 {
-        (self.n2_a[x] * self.p_n2[x] + self.he_a[x] * self.p_he[x]) /
-            (self.p_n2[x] + self.p_he[x])
+        (self.n2_a[x] * self.tissue.p_n2[x] + self.he_a[x] * self.tissue.p_he[x]) /
+            (self.tissue.p_n2[x] + self.tissue.p_he[x])
     }
 
     pub(crate) fn next_stop(&self, ascent_rate: isize, descent_rate: isize,
@@ -243,6 +237,10 @@ impl ZHL16 {
         }
         Some(DiveSegment::new(SegmentType::NoDeco, self.diver_depth,
                               self.diver_depth, Duration::minutes(ndl), 0, 0).unwrap())
+    }
+
+    pub fn tissue(&self) -> Tissue {
+        self.tissue
     }
 }
 
