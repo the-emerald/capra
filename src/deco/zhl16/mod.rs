@@ -5,10 +5,9 @@ use crate::common::gas::Gas;
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use time::Duration;
 use crate::common::time_taken;
+use crate::deco::{TISSUE_COUNT, WATER_VAPOUR_PRESSURE};
 
 pub mod util;
-
-const TISSUE_COUNT: usize = 16;
 
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
@@ -34,10 +33,10 @@ impl ZHL16 {
                n2_hl: [f64; TISSUE_COUNT], he_a: [f64;TISSUE_COUNT], he_b: [f64;TISSUE_COUNT],
                he_hl: [f64;TISSUE_COUNT], gf_low: usize, gf_high: usize) -> Self {
 
-        let adjusted_fr_n2 = tissue_gas.fr_n2() * (1.0 - util::ZHL16_WATER_VAPOUR_PRESSURE);
+        let adjusted_fr_n2 = tissue_gas.fr_n2() * (1.0 - WATER_VAPOUR_PRESSURE);
         let adjusted_fr_he;
-        if tissue_gas.fr_he() >= util::ZHL16_WATER_VAPOUR_PRESSURE {
-            adjusted_fr_he = tissue_gas.fr_he() * (1.0 - util::ZHL16_WATER_VAPOUR_PRESSURE)
+        if tissue_gas.fr_he() >= WATER_VAPOUR_PRESSURE {
+            adjusted_fr_he = tissue_gas.fr_he() * (1.0 - WATER_VAPOUR_PRESSURE)
         }
         else {
             adjusted_fr_he = tissue_gas.fr_he() // TODO: Refactor this to be consistent?
@@ -124,7 +123,7 @@ impl ZHL16 {
     }
 
     fn compensated_pressure(depth: usize, metres_per_bar: f64) -> f64 {
-        common::mtr_bar(depth as f64, metres_per_bar) - util::ZHL16_WATER_VAPOUR_PRESSURE
+        common::mtr_bar(depth as f64, metres_per_bar) - WATER_VAPOUR_PRESSURE
     }
 
     fn depth_change_loading(time: f64, initial_pressure: f64, initial_ambient_pressure: f64,
