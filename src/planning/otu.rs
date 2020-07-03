@@ -6,14 +6,14 @@ pub fn otu(segment: &DiveSegment, gas: &Gas) -> f64 {
         SegmentType::AscDesc => {
             ascent_descent_constant(
                 segment.time().whole_seconds() as usize,
-                 Gas::partial_pressure(segment.start_depth(), gas.fr_o2(), 1000.0),
-                 Gas::partial_pressure(segment.end_depth(), gas.fr_o2(), 1000.0),
+                 gas.pp_o2(segment.start_depth(), 10.0),
+                 gas.pp_o2(segment.end_depth(), 10.0),
             )
         }
         _ => {
             constant_depth(
                 segment.time().whole_seconds() as usize,
-                Gas::partial_pressure(segment.start_depth(), gas.fr_o2(), 1000.0)
+                gas.pp_o2(segment.start_depth(), 10.0)
             )
         }
     }

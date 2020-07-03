@@ -64,8 +64,16 @@ impl Gas {
         (((depth + 10) as f64 * (1.0 - self.fr_he())) - 10.0) as usize
     }
 
-    pub fn partial_pressure(depth: usize, fr: f64, metres_per_bar: f64) -> f64 {
-        mtr_bar(depth as f64, metres_per_bar) * fr
+    pub fn pp_o2(&self, depth: usize, metre_per_bar: f64) -> f64 {
+        mtr_bar(depth as f64, metre_per_bar) * self.fr_o2()
+    }
+
+    pub fn pp_he(&self, depth: usize, metre_per_bar: f64) -> f64 {
+        mtr_bar(depth as f64, metre_per_bar) * self.fr_he()
+    }
+
+    pub fn pp_n2(&self, depth: usize, metre_per_bar: f64) -> f64 {
+        mtr_bar(depth as f64, metre_per_bar) * self.fr_n2()
     }
 }
 

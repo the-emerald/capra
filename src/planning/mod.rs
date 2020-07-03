@@ -1,5 +1,4 @@
 use crate::deco::deco_algorithm::DecoAlgorithm;
-use crate::common::dive_segment::DiveSegment;
 use crate::common::gas::Gas;
 use crate::common::tank::Tank;
 use crate::planning::diveresult::DiveResult;
@@ -19,6 +18,6 @@ pub trait DivePlan<T: DecoAlgorithm> {
 
 // TODO: Move this somewhere more appropriate
 fn gas_in_ppo2_range(depth: usize, min: f64, max: f64, gas: &Gas) -> bool { // Checks if gas is in ppo2 range
-    let gas_ppo2 = Gas::partial_pressure(depth, gas.fr_o2(), 10.0);
+    let gas_ppo2 = gas.pp_o2(depth, 10.0);
     gas_ppo2 >= min && gas_ppo2 <= max
 }

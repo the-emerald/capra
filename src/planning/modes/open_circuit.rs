@@ -61,8 +61,8 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
             .collect(); // filter gases over E.N.D.
 
         candidates.sort_by(|a, b|
-            Gas::partial_pressure(segment.start_depth(), a.fr_o2(), metres_per_bar)
-                .partial_cmp(&Gas::partial_pressure(segment.start_depth(), b.fr_o2(), metres_per_bar))
+            a.pp_o2(segment.start_depth(), metres_per_bar)
+                .partial_cmp(&b.pp_o2(segment.start_depth(), metres_per_bar))
                 .unwrap()); // sort by descending order of ppo2
 
         candidates

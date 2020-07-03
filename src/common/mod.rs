@@ -1,6 +1,7 @@
 use time::Duration;
 use num_traits::cast::FromPrimitive;
 use std::isize;
+#[allow(unused_imports)] // Seriously, my IDE complains if I don't put that there.
 use num_traits::real::Real;
 
 pub const DEFAULT_DESCENT_RATE: isize = 30;
