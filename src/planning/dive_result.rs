@@ -27,4 +27,8 @@ impl<T: DecoAlgorithm> DiveResult<T> {
     pub fn gas_used(&self) -> &HashMap<Gas, usize> {
         &self.gas_used
     }
+
+    pub fn deco_algorithm(&self) -> &T {
+        &self.deco_algorithm
+    }
 }

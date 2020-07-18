@@ -304,4 +304,8 @@ impl DecoAlgorithm for ZHL16 {
         }
         stops
     }
+
+    fn get_tissue(&self) -> Tissue {
+        self.tissue
+    }
 }

@@ -11,6 +11,24 @@ pub struct Tissue {
     pub(crate) p_t: [f64; TISSUE_COUNT],
 }
 
+impl Tissue {
+    pub fn new(p_n2: [f64; TISSUE_COUNT], p_he: [f64; TISSUE_COUNT], p_t: [f64; TISSUE_COUNT]) -> Self {
+        Self {
+            p_n2,
+            p_he,
+            p_t
+        }
+    }
+
+    pub fn p_n2(&self) -> [f64; TISSUE_COUNT] {
+        self.p_n2
+    }
+
+    pub fn p_he(&self) -> [f64; TISSUE_COUNT] {
+        self.p_n2
+    }
+}
+
 impl Default for Tissue {
     fn default() -> Self {
         let air = gas!(21, 0);
