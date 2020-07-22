@@ -228,6 +228,7 @@ impl<'a, T: DecoAlgorithm> DivePlan<T> for OpenCircuit<'a, T> {
         for (segment, gas) in &total_segments {
             let gas_consumed = match segment.segment_type() {
                 SegmentType::DecoStop => segment.gas_consumed(self.sac_deco, self.metres_per_bar),
+                SegmentType::NoDeco => { 0 } // No deco segments aren't actually segments
                 _ => segment.gas_consumed(self.sac_bottom, self.metres_per_bar)
             };
             let gas_needed = *(gas_plan.entry(*gas).or_insert(0)) + gas_consumed;
