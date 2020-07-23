@@ -7,8 +7,11 @@ use time::Duration;
 use crate::common::time_taken;
 use crate::deco::{TISSUE_COUNT, WATER_VAPOUR_PRESSURE};
 use crate::deco::tissue::Tissue;
+use crate::deco::zhl16::util::{ZHL16B_N2_A, ZHL16B_N2_B, ZHL16B_N2_HALFLIFE, ZHL16B_HE_A, ZHL16B_HE_B, ZHL16B_HE_HALFLIFE, ZHL16C_N2_A, ZHL16C_N2_B, ZHL16C_N2_HALFLIFE, ZHL16C_HE_A, ZHL16C_HE_B, ZHL16C_HE_HALFLIFE};
+use crate::deco::zhl16::variant::Variant;
 
 pub mod util;
+pub mod variant;
 
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
@@ -51,6 +54,35 @@ impl ZHL16 {
             first_deco_depth: None,
             gf_low: gf_low as f64/100.0,
             gf_high: gf_high as f64/100.0,
+        }
+    }
+
+    pub fn new_by_variant(tissue: Tissue, gfl: usize, gfh: usize, variant: Variant) -> Self {
+        match variant {
+            Variant::B => {
+                Self::new(
+                    tissue,
+                    ZHL16B_N2_A,
+                    ZHL16B_N2_B,
+                    ZHL16B_N2_HALFLIFE,
+                    ZHL16B_HE_A,
+                    ZHL16B_HE_B,
+                    ZHL16B_HE_HALFLIFE,
+                    gfl, gfh
+                )
+            },
+            Variant::C => {
+                Self::new(
+                    tissue,
+                    ZHL16C_N2_A,
+                    ZHL16C_N2_B,
+                    ZHL16C_N2_HALFLIFE,
+                    ZHL16C_HE_A,
+                    ZHL16C_HE_B,
+                    ZHL16C_HE_HALFLIFE,
+                    gfl, gfh
+                )
+            },
         }
     }
 
