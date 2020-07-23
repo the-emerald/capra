@@ -12,9 +12,9 @@ path = "src/lib.rs"
 
 [dependencies]
 time = "0.2.16"
-num-traits = "0.2.11"
-thiserror = "1.0.19"
-serde = { version = "1.0.110", optional = true}
+num-traits = "0.2.12"
+thiserror = "1.0.20"
+serde = { version = "1.0.114", optional = true}
 
 [features]
 use-serde = ["serde/derive", "time/serde"]
