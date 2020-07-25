@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use crate::common::time_taken;
 use std::iter;
 use crate::common::tank::Tank;
-use crate::planning::{DivePlan, gas_in_ppo2_range, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
+use crate::planning::{DivePlan, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
 use crate::planning::dive_result::DiveResult;
 
 #[derive(Copy, Clone, Debug)]
@@ -52,7 +52,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         candidates = candidates
             .into_iter()
             .filter(|a|
-                gas_in_ppo2_range(segment.start_depth(), PPO2_MINIMUM, PPO2_MAXIMUM_DECO, a))
+                a.in_ppo2_range(segment.start_depth(), PPO2_MINIMUM, PPO2_MAXIMUM_DECO))
             .collect(); // filter gases not in ppo2 range
 
         candidates = candidates.into_iter()

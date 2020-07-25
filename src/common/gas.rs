@@ -64,6 +64,11 @@ impl Gas {
         (((depth + 10) as f64 * (1.0 - self.fr_he())) - 10.0) as usize
     }
 
+    pub fn in_ppo2_range(&self, depth: usize, min: f64, max: f64) -> bool {
+        let ppo2 = self.pp_n2(depth, 10.0);
+        ppo2 >= min && ppo2 <= max
+    }
+
     pub fn pp_o2(&self, depth: usize, metre_per_bar: f64) -> f64 {
         mtr_bar(depth as f64, metre_per_bar) * self.fr_o2()
     }
