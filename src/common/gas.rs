@@ -5,7 +5,7 @@ use crate::common::mtr_bar;
 pub enum GasError {
     #[error("gas does not have total fraction of 1.0")]
     /// The sum of all percentage gas fractions does not add up to 100.
-    FractionError
+    FractionError,
 }
 
 /// A gas mix used in a dive.
@@ -17,7 +17,7 @@ pub struct Gas {
     /// Percentage fraction of helium in the mix.
     he: usize,
     /// Percentage fraction of nitrogen in the mix.
-    n2: usize
+    n2: usize,
 }
 
 /// Shorthand for creating a Gas, in a style similar to mix notation (O2/He)
@@ -25,11 +25,9 @@ pub struct Gas {
 /// This macro will panic if the two supplied values exceed 100.
 #[macro_export]
 macro_rules! gas {
-    ($o2:expr, $he:expr) => {
-        {
-            Gas::new($o2, $he, 100 - $o2 - $he).unwrap()
-        }
-    };
+    ($o2:expr, $he:expr) => {{
+        Gas::new($o2, $he, 100 - $o2 - $he).unwrap()
+    }};
 }
 
 impl Gas {
@@ -42,14 +40,10 @@ impl Gas {
     /// This function will return a [`GasError`] if the percentage fractions do not add up to 100.
     pub fn new(o2: usize, he: usize, n2: usize) -> Result<Self, GasError> {
         if o2 + he + n2 != 100 {
-            return Err(GasError::FractionError)
+            return Err(GasError::FractionError);
         }
 
-        Ok(Self {
-            o2,
-            he,
-            n2
-        })
+        Ok(Self { o2, he, n2 })
     }
 
     /// Returns the **fraction** of nitrogen in the mix.

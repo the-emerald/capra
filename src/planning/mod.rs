@@ -1,10 +1,10 @@
 //! Items related to dive planning and the application of decompression models
 
-use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::common::tank::Tank;
+use crate::deco::deco_algorithm::DecoAlgorithm;
 
-pub mod modes;
 pub mod dive_result;
+pub mod modes;
 pub mod otu;
 
 pub use dive_result::DiveResult;

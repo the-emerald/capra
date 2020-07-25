@@ -1,8 +1,8 @@
 //! Decompression models
 
-pub mod zhl16;
 pub mod deco_algorithm;
 pub mod tissue;
+pub mod zhl16;
 
 pub use deco_algorithm::DecoAlgorithm;
 

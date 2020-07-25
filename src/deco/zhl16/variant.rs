@@ -5,5 +5,5 @@ pub enum Variant {
     /// ZHL-16B
     B,
     /// ZHL-16C
-    C
+    C,
 }

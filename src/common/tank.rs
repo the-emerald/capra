@@ -9,7 +9,7 @@ pub struct Tank {
     /// Physical volume inside the tank.
     raw_volume: usize,
     /// Manufacturer specified service pressure of the tank.
-    service_pressure: usize
+    service_pressure: usize,
 }
 
 impl Tank {
@@ -22,7 +22,7 @@ impl Tank {
         Tank {
             gas,
             raw_volume,
-            service_pressure
+            service_pressure,
         }
     }
 }

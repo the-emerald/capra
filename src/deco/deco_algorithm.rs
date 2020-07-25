@@ -1,8 +1,8 @@
 use crate::common::dive_segment;
-use std::fmt::Debug;
-use crate::common::gas::Gas;
 use crate::common::dive_segment::DiveSegment;
+use crate::common::gas::Gas;
 use crate::deco::tissue::Tissue;
+use std::fmt::Debug;
 
 /// Trait for decompression models. This trait must be implemented for any custom decompression
 /// algorithms if they are to be used in dive plans with the [`DivePlan`] trait.
@@ -19,14 +19,26 @@ pub trait DecoAlgorithm: Copy + Clone + Debug {
     /// # Arguments
     /// * `ascent_rate` - Ascent rate to use during stops
     /// * `descent_rate` - Ascent rate to use during stops
-    fn surface(&mut self, ascent_rate: isize, descent_rate: isize, gas: &Gas, metres_per_bar: f64) -> Vec<dive_segment::DiveSegment>;
+    fn surface(
+        &mut self,
+        ascent_rate: isize,
+        descent_rate: isize,
+        gas: &Gas,
+        metres_per_bar: f64,
+    ) -> Vec<dive_segment::DiveSegment>;
 
     /// Get the tissue loadings of the model
     fn get_tissue(&self) -> Tissue;
 
     /// Get the decompression stops required to surface the model. This is identical to `surface`
     /// but it does not modify the original model in any way.
-    fn get_stops(&self, ascent_rate: isize, descent_rate: isize, gas: &Gas, metres_per_bar: f64) -> Vec<dive_segment::DiveSegment> {
+    fn get_stops(
+        &self,
+        ascent_rate: isize,
+        descent_rate: isize,
+        gas: &Gas,
+        metres_per_bar: f64,
+    ) -> Vec<dive_segment::DiveSegment> {
         let mut virtual_deco = *self;
         virtual_deco.surface(ascent_rate, descent_rate, gas, metres_per_bar)
     }

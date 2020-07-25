@@ -1,14 +1,14 @@
-use crate::common::dive_segment::SegmentType::AscDesc;
 use crate::common::dive_segment::DiveSegmentError::IncorrectSegmentTypeError;
-use time::Duration;
+use crate::common::dive_segment::SegmentType::AscDesc;
 use crate::common::mtr_bar;
+use time::Duration;
 
 /// Represents errors that occur while working with DiveSegments.
 #[derive(thiserror::Error, Debug)]
 pub enum DiveSegmentError {
     #[error("segment type and start/end depths are inconsistent")]
     /// SegmentType supplied to create a DiveSegment were inconsistent with its parameters.
-    IncorrectSegmentTypeError
+    IncorrectSegmentTypeError,
 }
 
 /// Represents different types of DiveSegments possible.
@@ -22,7 +22,7 @@ pub enum SegmentType {
     /// Segment represents a bottom segment.
     DiveSegment,
     /// Segment represents a change in depth.
-    AscDesc
+    AscDesc,
 }
 
 /// The atomic unit of a dive. Every dive can be represented by a list of DiveSegments.
@@ -56,9 +56,14 @@ impl DiveSegment {
     /// This function will return a [`DiveSegmentError`] if any of the following are true:
     /// * `segment-type` is `AscDesc` but start and end depths match.
     /// * `segment-type` is *not* `AscDesc` but start and end depths *do not* match.
-    pub fn new(segment_type: SegmentType, start_depth: usize, end_depth: usize, time: Duration,
-               ascent_rate: isize, descent_rate: isize) -> Result<Self, DiveSegmentError> {
-
+    pub fn new(
+        segment_type: SegmentType,
+        start_depth: usize,
+        end_depth: usize,
+        time: Duration,
+        ascent_rate: isize,
+        descent_rate: isize,
+    ) -> Result<Self, DiveSegmentError> {
         // Only allow AscDesc segments with a differing start/end depth.
         // As well as any other segment type without a consistent start/end depth,
         match (segment_type, start_depth == end_depth) {
@@ -114,10 +119,13 @@ impl DiveSegment {
     /// * `metres_per_bar` - Depth of water required to induce 1 bar of pressure.
     pub fn gas_consumed(&self, sac_rate: usize, metres_per_bar: f64) -> usize {
         let pressure = match self.segment_type() {
-            AscDesc => mtr_bar(((self.end_depth() + self.start_depth()) / 2) as f64, metres_per_bar),
-            _ => mtr_bar(self.end_depth() as f64, metres_per_bar)
+            AscDesc => mtr_bar(
+                ((self.end_depth() + self.start_depth()) / 2) as f64,
+                metres_per_bar,
+            ),
+            _ => mtr_bar(self.end_depth() as f64, metres_per_bar),
         };
 
-        (pressure * (self.time().as_seconds_f64()/60.0) * sac_rate as f64) as usize
+        (pressure * (self.time().as_seconds_f64() / 60.0) * sac_rate as f64) as usize
     }
 }
