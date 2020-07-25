@@ -7,7 +7,7 @@ use crate::common::mtr_bar;
 #[derive(thiserror::Error, Debug)]
 pub enum DiveSegmentError {
     #[error("segment type and start/end depths are inconsistent")]
-    /// The SegmentType supplied to create a DiveSegment were inconsistent with its parameters.
+    /// SegmentType supplied to create a DiveSegment were inconsistent with its parameters.
     IncorrectSegmentTypeError
 }
 
@@ -111,7 +111,7 @@ impl DiveSegment {
     /// Returns the quantity of gas a diver would consume in the segment.
     /// # Arguments
     /// * `sac_rate` - Surface Air Consumption (SAC) rate (measured in bar min^-1).
-    /// * `metres_per_bar` - The depth of water required to induce 1 bar of pressure.
+    /// * `metres_per_bar` - Depth of water required to induce 1 bar of pressure.
     pub fn gas_consumed(&self, sac_rate: usize, metres_per_bar: f64) -> usize {
         let pressure = match self.segment_type() {
             AscDesc => mtr_bar(((self.end_depth() + self.start_depth()) / 2) as f64, metres_per_bar),

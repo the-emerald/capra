@@ -87,9 +87,9 @@ impl Gas {
 
     /// Helper function to check whether the mix is in an acceptable ppO2 range at a given depth.
     /// # Arguments
-    /// * `depth` - The depth the mix is being breathed at.
-    /// * `min` - The minimum tolerable ppO2.
-    /// * `max` - The maximum tolerable ppO2.
+    /// * `depth` -Depth the mix is being breathed at.
+    /// * `min` - Minimum tolerable ppO2.
+    /// * `max` - Maximum tolerable ppO2.
     pub fn in_ppo2_range(&self, depth: usize, min: f64, max: f64) -> bool {
         let ppo2 = self.pp_o2(depth, 10.0);
         ppo2 >= min && ppo2 <= max
@@ -97,24 +97,24 @@ impl Gas {
 
     /// Returns the ppO2 of the mix at a given depth.
     /// # Arguments
-    /// * `depth` - The depth the mix is being breathed at.
-    /// * `metres_per_bar` - The depth of water required to induce 1 bar of pressure.
+    /// * `depth` - Depth the mix is being breathed at.
+    /// * `metres_per_bar` - Depth of water required to induce 1 bar of pressure.
     pub fn pp_o2(&self, depth: usize, metres_per_bar: f64) -> f64 {
         mtr_bar(depth as f64, metres_per_bar) * self.fr_o2()
     }
 
     /// Returns the ppHe of the mix at a given depth.
     /// # Arguments
-    /// * `depth` - The depth the mix is being breathed at.
-    /// * `metres_per_bar` - The depth of water required to induce 1 bar of pressure.
+    /// * `depth` - Depth the mix is being breathed at.
+    /// * `metres_per_bar` - Depth of water required to induce 1 bar of pressure.
     pub fn pp_he(&self, depth: usize, metres_per_bar: f64) -> f64 {
         mtr_bar(depth as f64, metres_per_bar) * self.fr_he()
     }
 
     /// Returns the ppN2 of the mix at a given depth.
     /// # Arguments
-    /// * `depth` - The depth the mix is being breathed at.
-    /// * `metres_per_bar` - The depth of water required to induce 1 bar of pressure.
+    /// * `depth` - Depth the mix is being breathed at.
+    /// * `metres_per_bar` - Depth of water required to induce 1 bar of pressure.
     pub fn pp_n2(&self, depth: usize, metre_per_bar: f64) -> f64 {
         mtr_bar(depth as f64, metre_per_bar) * self.fr_n2()
     }

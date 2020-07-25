@@ -22,25 +22,25 @@ pub mod tank;
 
 /// Helper function to convert pressure to the equivalent depth of water that would induce it.
 /// # Arguments
-/// * `bar` - The pressure measured in bars.
-/// * `metres_per_bar` - The depth of water required to induce 1 bar of pressure.
+/// * `bar` - Pressure measured in bars
+/// * `metres_per_bar` - Depth of water required to induce 1 bar of pressure
 pub fn bar_mtr(bar: f64, metres_per_bar: f64) -> f64 {
     (bar-1.0) * metres_per_bar
 }
 
 /// Helper function to convert a depth of water to the pressure it will induce.
 /// # Arguments
-/// * `mtr` - The depth of water.
-/// * `metres_per_bar` - The depth of water required to induce 1 bar of pressure.
+/// * `mtr` - Depth of water.
+/// * `metres_per_bar` - Depth of water required to induce 1 bar of pressure.
 pub fn mtr_bar(mtr: f64, metres_per_bar: f64) -> f64 {
     (mtr/metres_per_bar) + 1.0
 }
 
 /// Helper function to calculate the time taken to change depths, given a rate.
 /// # Arguments
-/// * `rate` - The rate of depth change
-/// * `depth_1` - The first depth
-/// * `depth_2` - The second depth
+/// * `rate` - Rate of depth change
+/// * `depth_1` - First depth
+/// * `depth_2` - Second depth
 /// # Panics
 /// Function will panic if the time taken exceeds [`i64::MAX`].
 pub fn time_taken(rate: isize, depth_1: usize, depth_2: usize) -> Duration {

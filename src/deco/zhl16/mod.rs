@@ -49,7 +49,7 @@ impl ZHL16 {
     /// Returns a ZHL16 model with the given parameters. Use this if you have to supply all the tissue
     /// loading constants by yourself. Otherwise, use [`ZHL16::new_by_variant`] instead.
     /// # Arguments
-    /// * `tissue` - The tissue model of the diver before the dive
+    /// * `tissue` - Tissue model of the diver before the dive
     /// * `n2_a` - Nitrogen A-values to use
     /// * `n2_b` - Nitrogen B-values to use
     /// * `n2_hl` - Nitrogen half-lives to use
@@ -86,7 +86,7 @@ impl ZHL16 {
 
     /// Returns a ZHL16 model with the tissue loading constants of a defined variant.
     /// # Arguments
-    /// * `tissue` - The tissue model of the diver before the dive
+    /// * `tissue` - Tissue model of the diver before the dive
     /// * `gf_low` - Gradient Factor low value to use when calculating deco stops
     /// * `gf_high` - Gradient Factor high value to use when calculating deco stops
     /// * `variant` - Variant to use
