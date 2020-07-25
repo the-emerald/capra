@@ -197,7 +197,6 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         }
         else {
             // Push segments and return
-            // TODO: Check NDL behaviour?
             stops_performed.append(&mut stops.into_iter().zip(iter::repeat(start.1)).collect());
             deco = virtual_deco;
             deco
