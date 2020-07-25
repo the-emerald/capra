@@ -11,21 +11,40 @@ use crate::common::tank::Tank;
 use crate::planning::{DivePlan, PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
 use crate::planning::dive_result::DiveResult;
 
+/// An open circuit dive plan.
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuit<'a, T: DecoAlgorithm> {
+    /// Decompression algorithm to use
     deco_algorithm: T,
+    /// Deco gases to use, and an optional corresponding Maximum Operating Depth
     deco_gases: &'a [(Gas, Option<usize>)],
+    /// Bottom segments of the dive and corresponding gas used
     bottom_segments: &'a [(DiveSegment, Gas)],
 
+    /// Ascent rate
     ascent_rate: isize,
+    /// Descent rate
     descent_rate: isize,
+    /// Depth of water required to induce 1 bar of pressure.
     metres_per_bar: f64,
 
+    /// Surface Air Consumption rate for bottom segments (measured in bar min^-1)
     sac_bottom: usize,
+    /// Surface Air Consumption rate for bottom segments (measured in bar min^-1)
     sac_deco: usize
 }
 
 impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
+    /// Returns a open circuit dive plan with the given parameters.
+    /// # Arguments
+    /// * `deco_algorithm` - Decompression algorithm to use
+    /// * `deco_gases` - Deco gases to use, and an optional corresponding Maximum Operating Depth
+    /// * `bottom_segments` - Bottom segments of the dive and corresponding gas used
+    /// * `ascent_rate` - Ascent rate to use throughout the dive
+    /// * `descent_rate` - Descent rate to use throughout the dive
+    /// * `water_density` - Density of water during the dive (measured in kg m^-3)
+    /// * `sac_bottom` - Surface Air Consumption on bottom segments (measured in bar min^-1)
+    /// * `sac_deco` - Surface Air Consumption during decompression (measured in bar min^-1)
     pub fn new(deco_algorithm: T, deco_gases: &'a [(Gas, Option<usize>)],
                bottom_segments: &'a [(DiveSegment, Gas)], ascent_rate: isize,
                descent_rate: isize, water_density: f64, sac_bottom: usize, sac_deco: usize) -> Self {
@@ -41,6 +60,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         }
     }
 
+    /// Returns gases that are suitable for use at a dive segment
     fn filter_gases<'b>(segment: &DiveSegment, gases: &'b [(Gas, Option<usize>)], metres_per_bar: f64) -> Vec<&'b Gas> {
         let mut candidates = gases
             .iter()
@@ -68,6 +88,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         candidates
     }
 
+    /// Return a gas switch point (if exists) in a list of dive segments.
     fn find_gas_switch_point<'c>(segments: &'c [DiveSegment], current_gas: &Gas, gases: &'c [(Gas, Option<usize>)], metres_per_bar: f64) -> Option<(&'c DiveSegment, &'c Gas)> {
         // Best gasplan is the gasplan that has the highest ppO2 (not over max allowed), and not over equivalent_narcotic_depth.
         for stop in segments.iter().filter(|x| x.segment_type() != AscDesc) {
@@ -82,6 +103,8 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         None
     }
 
+    /// Perform an open circuit dive plan from the `start` segment to the `end` segment.
+    /// The `end` segment is set to `None` if the end is the surface.
     pub(crate) fn level_to_level(&self, mut deco: T, start: &(DiveSegment, Gas),
                                  end: Option<&(DiveSegment, Gas)>,
                                  stops_performed: &mut Vec<(DiveSegment, Gas)>) -> T {

@@ -13,24 +13,51 @@ use crate::deco::zhl16::variant::Variant;
 pub mod util;
 pub mod variant;
 
+/// A ZHL-16 decompression model of a diver.
+/// # Notes
+/// For now, each ZHL16 struct should only be used for one dive. This is because calculating decompression
+/// stops with Gradient Factors requires some side effects to be stored inside the struct.
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZHL16 {
+    /// Current tissue model of the diver.
     tissue: Tissue,
+    /// Current depth of the diver.
     diver_depth: usize,
+    /// Nitrogen A-values.
     n2_a: [f64; TISSUE_COUNT],
+    /// Nitrogen B-values.
     n2_b: [f64; TISSUE_COUNT],
+    /// Nitrogen half-lives.
     n2_hl: [f64; TISSUE_COUNT],
+    /// Helium A-values.
     he_a: [f64; TISSUE_COUNT],
+    /// Helium B-values.
     he_b: [f64; TISSUE_COUNT],
+    /// Helium half-lives.
     he_hl: [f64; TISSUE_COUNT],
 
     first_deco_depth: Option<usize>,
+
+    /// GF Low value
     gf_low: f64,
+    /// GF High value
     gf_high: f64,
 }
 
 impl ZHL16 {
+    /// Returns a ZHL16 model with the given parameters. Use this if you have to supply all the tissue
+    /// loading constants by yourself. Otherwise, use [`ZHL16::new_by_variant`] instead.
+    /// # Arguments
+    /// * `tissue` - The tissue model of the diver before the dive
+    /// * `n2_a` - Nitrogen A-values to use
+    /// * `n2_b` - Nitrogen B-values to use
+    /// * `n2_hl` - Nitrogen half-lives to use
+    /// * `he_a` - Helium A-values to use
+    /// * `he_b` - Helium B-values to use
+    /// * `he_hl` - Helium half-lives to use
+    /// * `gf_low` - Gradient Factor low value to use when calculating deco stops
+    /// * `gf_high` - Gradient Factor high value to use when calculating deco stops
     pub fn new(tissue: Tissue,
                n2_a: [f64; TISSUE_COUNT],
                n2_b: [f64; TISSUE_COUNT],
@@ -57,6 +84,12 @@ impl ZHL16 {
         }
     }
 
+    /// Returns a ZHL16 model with the tissue loading constants of a defined variant.
+    /// # Arguments
+    /// * `tissue` - The tissue model of the diver before the dive
+    /// * `gf_low` - Gradient Factor low value to use when calculating deco stops
+    /// * `gf_high` - Gradient Factor high value to use when calculating deco stops
+    /// * `variant` - Variant to use
     pub fn new_by_variant(tissue: Tissue, gfl: usize, gfh: usize, variant: Variant) -> Self {
         match variant {
             Variant::B => {
@@ -86,17 +119,17 @@ impl ZHL16 {
         }
     }
 
+    /// Update the first deco depth of the diver. This is used to calculate the GF any given point
+    /// of the decompression schedule.
     fn update_first_deco_depth(&mut self, deco_depth: usize) {
-        // Update the first deco depth of the diver. This is used to calculate the GF any given point
-        // of the decompression schedule.
         match self.first_deco_depth {
             Some(_t) => {}, // If it's already set then don't touch it
             None => self.first_deco_depth = Some(deco_depth) // Otherwise update it
         }
     }
 
+    /// Find the gradient factor to use at a given depth during decompression
     fn gf_at_depth(&self, depth: usize) -> f64 {
-        // Find the gradient factor to use at a given depth during decompression
         match self.first_deco_depth {
             Some(t) => {
                 // Only calculate the gradient factor if we're below the surface.
@@ -110,9 +143,8 @@ impl ZHL16 {
         }
     }
 
+    /// Add a segment that has a depth change according to the Schreiner Equation.
     fn add_depth_change(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
-        // Add a segment that has a depth change according to the Schreiner Equation.
-
         let delta_depth = (segment.end_depth() as isize) - (segment.start_depth() as isize);
         let rate;
         if delta_depth > 0 {
@@ -148,16 +180,19 @@ impl ZHL16 {
         self.diver_depth = segment.end_depth(); // Update diver depth
     }
 
+    /// Calculate the pressure at a given depth minus the ambient water vapour pressure in the lungs.
     fn compensated_pressure(depth: usize, metres_per_bar: f64) -> f64 {
         common::mtr_bar(depth as f64, metres_per_bar) - WATER_VAPOUR_PRESSURE
     }
 
+    /// Calculate the gas loading with a depth change.
     fn depth_change_loading(time: f64, initial_pressure: f64, initial_ambient_pressure: f64,
                             r: f64, k: f64) -> f64 {
         initial_ambient_pressure + r * (time - (1.0 / k)) -
             ((initial_ambient_pressure - initial_pressure - (r / k)) * E.powf(-1.0 * k * time))
     }
 
+    /// Add a segment without depth change according to the Schreiner Equation.
     fn add_bottom_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
         for (idx, val) in self.tissue.p_n2.iter_mut().enumerate() {
             let po = *val;
@@ -179,6 +214,7 @@ impl ZHL16 {
         self.diver_depth = segment.end_depth();
     }
 
+    /// Returns the ascent ceiling of the model.
     pub(crate) fn find_ascent_ceiling(&self, gf_override: Option<f64>) -> f64 {
         let mut ceilings: [f64; TISSUE_COUNT] = [0.0; TISSUE_COUNT];
         let gf = match gf_override {
@@ -200,20 +236,24 @@ impl ZHL16 {
         ceilings.iter().cloned().fold(std::f64::NAN, f64::max)
     }
 
+    /// Calculate the tissue ceiling of a compartment.
     fn tissue_ceiling(&self, gf: f64, x: usize, a: f64, b: f64) -> f64 {
         ((self.tissue.p_n2[x] + self.tissue.p_he[x]) - (a * gf)) / (gf / b + 1.0 - gf)
     }
 
+    /// Calculate the B-value of a compartment.
     fn tissue_b_value(&self, x: usize) -> f64 {
         (self.n2_b[x] * self.tissue.p_n2[x] + self.he_b[x] * self.tissue.p_he[x]) /
             (self.tissue.p_n2[x] + self.tissue.p_he[x])
     }
 
+    /// Calculate the A-value of a compartment.
     fn tissue_a_value(&self, x: usize) -> f64 {
         (self.n2_a[x] * self.tissue.p_n2[x] + self.he_a[x] * self.tissue.p_he[x]) /
             (self.tissue.p_n2[x] + self.tissue.p_he[x])
     }
 
+    /// Return the next deco stop of the model.
     pub(crate) fn next_stop(&self, ascent_rate: isize, descent_rate: isize,
                             gas: &Gas, metres_per_bar: f64) -> DiveSegment {
         let stop_depth = (3.0*(
@@ -247,6 +287,7 @@ impl ZHL16 {
                          Duration::minutes(stop_time as i64), ascent_rate, descent_rate).unwrap()
     }
 
+    /// Return the no-decompression limit of the model, if it exists.
     pub(crate) fn ndl(&self, gas: &Gas, metres_per_bar: f64) -> Option<DiveSegment> {
         let mut ndl = 0;
         let mut in_ndl= true;
@@ -271,6 +312,7 @@ impl ZHL16 {
                               self.diver_depth, Duration::minutes(ndl), 0, 0).unwrap())
     }
 
+    /// Returns the tissue of the deco model.
     pub fn tissue(&self) -> Tissue {
         self.tissue
     }

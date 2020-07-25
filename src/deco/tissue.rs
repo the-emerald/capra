@@ -2,6 +2,8 @@ use crate::deco::{TISSUE_COUNT, WATER_VAPOUR_PRESSURE};
 use crate::gas;
 use crate::common::gas::Gas;
 
+/// A set of tissues for use in decompression models, comprising a set of tissues for nitrogen
+/// and another set for helium.
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Tissue {
@@ -12,6 +14,11 @@ pub struct Tissue {
 }
 
 impl Tissue {
+    /// Returns a new Tissue with the given parameters.
+    /// # Arguments
+    /// * `p_n2` - Set of tissues for nitrogen
+    /// * `p_he` - Set of tissues for nitrogen
+    /// * `p_t` - Total pressure of all tissues
     pub fn new(p_n2: [f64; TISSUE_COUNT], p_he: [f64; TISSUE_COUNT], p_t: [f64; TISSUE_COUNT]) -> Self {
         Self {
             p_n2,
