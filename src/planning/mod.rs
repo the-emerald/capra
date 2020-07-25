@@ -1,10 +1,12 @@
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::common::tank::Tank;
-use crate::planning::dive_result::DiveResult;
 
 pub mod modes;
 pub mod dive_result;
 pub mod otu;
+
+pub use dive_result::DiveResult;
+pub use otu::otu;
 
 /// A default, placeholder minimum ppO2.
 pub const PPO2_MINIMUM: f64 = 0.18;

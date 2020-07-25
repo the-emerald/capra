@@ -8,10 +8,13 @@ use crate::common::time_taken;
 use crate::deco::{TISSUE_COUNT, WATER_VAPOUR_PRESSURE};
 use crate::deco::tissue::Tissue;
 use crate::deco::zhl16::util::{ZHL16B_N2_A, ZHL16B_N2_B, ZHL16B_N2_HALFLIFE, ZHL16B_HE_A, ZHL16B_HE_B, ZHL16B_HE_HALFLIFE, ZHL16C_N2_A, ZHL16C_N2_B, ZHL16C_N2_HALFLIFE, ZHL16C_HE_A, ZHL16C_HE_B, ZHL16C_HE_HALFLIFE};
-use crate::deco::zhl16::variant::Variant;
 
 pub mod util;
 pub mod variant;
+
+pub use util::*;
+
+pub use variant::Variant;
 
 /// A ZHL-16 decompression model of a diver.
 /// # Notes

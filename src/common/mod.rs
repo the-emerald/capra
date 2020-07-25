@@ -20,6 +20,15 @@ pub mod dive_segment;
 pub mod gas;
 pub mod tank;
 
+pub use dive_segment::DiveSegment;
+pub use dive_segment::DiveSegmentError;
+pub use dive_segment::SegmentType;
+
+pub use gas::Gas;
+pub use gas::GasError;
+
+pub use tank::Tank;
+
 /// Helper function to convert pressure to the equivalent depth of water that would induce it.
 /// # Arguments
 /// * `bar` - Pressure measured in bars
