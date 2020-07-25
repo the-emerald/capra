@@ -1,3 +1,5 @@
+//! Commonly used items for decompression models and dive planning
+
 use time::Duration;
 use num_traits::cast::FromPrimitive;
 use std::isize;

@@ -1,3 +1,5 @@
+//! Decompression models
+
 pub mod zhl16;
 pub mod deco_algorithm;
 pub mod tissue;

@@ -20,6 +20,9 @@ pub struct Gas {
     n2: usize
 }
 
+/// Shorthand for creating a Gas, in a style similar to mix notation (O2/He)
+/// # Panics
+/// This macro will panic if the two supplied values exceed 100.
 #[macro_export]
 macro_rules! gas {
     ($o2:expr, $he:expr) => {

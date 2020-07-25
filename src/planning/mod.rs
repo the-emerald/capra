@@ -1,3 +1,5 @@
+//! Items related to dive planning and the application of decompression models
+
 use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::common::tank::Tank;
 
