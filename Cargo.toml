@@ -3,6 +3,11 @@ name = "capra"
 version = "0.1.0"
 authors = ["Anson <git@anson-cheung.com>"]
 edition = "2018"
+license = "MIT"
+description = "Diver compression and dive planning library"
+repository = "https://github.com/the-emerald/capra"
+readme = "README.md"
+keywords = ["scuba", "diving", "decompression", "dive-plan"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
