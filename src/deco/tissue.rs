@@ -37,6 +37,8 @@ impl Tissue {
 }
 
 impl Default for Tissue {
+    /// A default value for tissues. This is the tissue loading of a diver who has been breathing
+    /// air at 1 atm for a long time.
     fn default() -> Self {
         let air = gas!(21, 0);
         let adj_fr_n2 = air.fr_n2() * (1.0 - WATER_VAPOUR_PRESSURE);
