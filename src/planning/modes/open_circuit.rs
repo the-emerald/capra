@@ -238,7 +238,7 @@ impl<'a, T: DecoAlgorithm> DivePlan<T> for OpenCircuit<'a, T> {
         DiveResult::new(deco, total_segments, gas_plan)
     }
 
-    fn plan_backwards(&self, tanks: &[Tank]) -> DiveResult<T> {
+    fn plan_backwards(&self, _tanks: &[Tank]) -> DiveResult<T> {
         unimplemented!()
     }
 }

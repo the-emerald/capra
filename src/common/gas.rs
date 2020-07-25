@@ -77,6 +77,6 @@ impl Gas {
     }
 }
 
-fn valid_pp(pp: f64) -> bool {
-    pp >= 0.0 && pp <= 1.0
-}
+// fn valid_pp(pp: f64) -> bool {
+//     pp >= 0.0 && pp <= 1.0
+// }
