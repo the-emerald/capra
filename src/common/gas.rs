@@ -65,7 +65,7 @@ impl Gas {
     }
 
     pub fn in_ppo2_range(&self, depth: usize, min: f64, max: f64) -> bool {
-        let ppo2 = self.pp_n2(depth, 10.0);
+        let ppo2 = self.pp_o2(depth, 10.0);
         ppo2 >= min && ppo2 <= max
     }
 
