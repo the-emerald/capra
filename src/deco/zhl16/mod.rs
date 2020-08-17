@@ -2,7 +2,6 @@ use crate::common;
 use crate::common::dive_segment::{DiveSegment, SegmentType};
 use crate::common::gas::Gas;
 use crate::common::time_taken;
-use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::deco::tissue::Tissue;
 use crate::deco::zhl16::util::{
     ZHL16B_HE_A, ZHL16B_HE_B, ZHL16B_HE_HALFLIFE, ZHL16B_N2_A, ZHL16B_N2_B, ZHL16B_N2_HALFLIFE,
@@ -11,6 +10,9 @@ use crate::deco::zhl16::util::{
 use crate::deco::{TISSUE_COUNT, WATER_VAPOUR_PRESSURE};
 use std::f64::consts::{E, LN_2};
 use time::Duration;
+
+#[cfg(feature = "std")]
+use crate::deco::deco_algorithm::DecoAlgorithm;
 
 pub mod util;
 pub mod variant;
@@ -294,7 +296,7 @@ impl ZHL16 {
                     descent_rate,
                 )
                 .unwrap();
-                virtual_zhl16.add_dive_segment(&depth_change_segment, gas, metres_per_bar);
+                virtual_zhl16.add_segment(&depth_change_segment, gas, metres_per_bar);
             }
             let segment = DiveSegment::new(
                 SegmentType::DecoStop,
@@ -306,7 +308,7 @@ impl ZHL16 {
             )
             .unwrap();
 
-            virtual_zhl16.add_dive_segment(&segment, gas, metres_per_bar);
+            virtual_zhl16.add_segment(&segment, gas, metres_per_bar);
             virtual_zhl16.update_first_deco_depth(segment.end_depth());
 
             in_limit = virtual_zhl16.find_ascent_ceiling(None)
@@ -376,22 +378,27 @@ impl ZHL16 {
     pub fn tissue(&self) -> Tissue {
         self.tissue
     }
-}
 
-impl DecoAlgorithm for ZHL16 {
-    fn add_dive_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
+    fn add_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
         match segment.segment_type() {
             SegmentType::AscDesc => {
-                self.add_depth_change(segment, gas, metres_per_bar);
-            }
+                self.add_depth_change(segment, gas, metres_per_bar)
+            },
             SegmentType::DecoStop => {
                 self.add_bottom_segment(segment, gas, metres_per_bar);
                 self.update_first_deco_depth(segment.start_depth());
-            }
+            },
             _ => {
                 self.add_bottom_segment(segment, gas, metres_per_bar);
             }
         }
+    }
+}
+
+#[cfg(feature = "std")]
+impl DecoAlgorithm for ZHL16 {
+    fn add_dive_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
+        self.add_segment(segment, gas, metres_per_bar);
     }
 
     fn surface(

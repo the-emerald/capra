@@ -1,13 +1,18 @@
 //! Items related to dive planning and the application of decompression models
 
 use crate::common::tank::Tank;
+
+#[cfg(feature = "std")]
 use crate::deco::deco_algorithm::DecoAlgorithm;
-
+#[cfg(feature = "std")]
 pub mod dive_result;
+#[cfg(feature = "std")]
 pub mod modes;
-pub mod otu;
 
+#[cfg(feature = "std")]
 pub use dive_result::DiveResult;
+
+pub mod otu;
 pub use otu::otu;
 
 /// A default, placeholder minimum ppO2.
@@ -20,6 +25,7 @@ pub const PPO2_MAXIMUM_DIVE: f64 = 1.4;
 pub const PPO2_MAXIMUM_DECO: f64 = 1.6;
 
 /// Trait for dive planning structs.
+#[cfg(feature = "std")]
 pub trait DivePlan<T: DecoAlgorithm> {
     /// Run the dive plan, returning a `DiveResult` that contains the results.
     fn plan(&self) -> DiveResult<T>;
