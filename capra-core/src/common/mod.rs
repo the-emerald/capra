@@ -1,7 +1,7 @@
 //! Commonly used items for decompression models and dive planning
 
 use num_traits::cast::FromPrimitive;
-use std::isize;
+use core::isize;
 use time::Duration;
 
 /// A default, placeholder descent rate (measured in m min^-1).

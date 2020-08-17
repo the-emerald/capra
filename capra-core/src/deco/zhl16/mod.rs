@@ -8,7 +8,7 @@ use crate::deco::zhl16::util::{
     ZHL16C_HE_A, ZHL16C_HE_B, ZHL16C_HE_HALFLIFE, ZHL16C_N2_A, ZHL16C_N2_B, ZHL16C_N2_HALFLIFE,
 };
 use crate::deco::{TISSUE_COUNT, WATER_VAPOUR_PRESSURE};
-use std::f64::consts::{E, LN_2};
+use core::f64::consts::{E, LN_2};
 use time::Duration;
 
 #[cfg(feature = "std")]
@@ -250,7 +250,7 @@ impl ZHL16 {
             *val = self.tissue_ceiling(gf, idx, a, b)
         }
 
-        ceilings.iter().cloned().fold(std::f64::NAN, f64::max)
+        ceilings.iter().cloned().fold(core::f64::NAN, f64::max)
     }
 
     /// Calculate the tissue ceiling of a compartment.
@@ -353,7 +353,7 @@ impl ZHL16 {
                         SegmentType::NoDeco,
                         self.diver_depth,
                         self.diver_depth,
-                        Duration::seconds(std::i64::MAX),
+                        Duration::seconds(core::i64::MAX),
                         0,
                         0,
                     )
