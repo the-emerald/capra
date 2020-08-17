@@ -19,6 +19,7 @@ pub const DENSITY_SALTWATER: f64 = 1023.6;
 pub mod dive_segment;
 pub mod gas;
 pub mod tank;
+pub mod otu;
 
 pub use dive_segment::DiveSegment;
 pub use dive_segment::DiveSegmentError;

@@ -1,9 +1,9 @@
-use crate::common::dive_segment::SegmentType::{AscDesc, DecoStop};
-use crate::common::dive_segment::{DiveSegment, SegmentType};
-use crate::common::gas::Gas;
-use crate::common::tank::Tank;
-use crate::common::time_taken;
-use crate::deco::deco_algorithm::DecoAlgorithm;
+use capra_core::common::dive_segment::SegmentType::{AscDesc, DecoStop};
+use capra_core::common::dive_segment::{DiveSegment, SegmentType};
+use capra_core::common::gas::Gas;
+use capra_core::common::tank::Tank;
+use capra_core::common::time_taken;
+use capra_core::deco::deco_algorithm::DecoAlgorithm;
 use crate::planning::dive_result::DiveResult;
 use crate::planning::{DivePlan, PPO2_MAXIMUM_DECO, PPO2_MINIMUM};
 use std::cmp::Ordering;

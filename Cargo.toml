@@ -20,8 +20,9 @@ time = { version = "^0.2.16" , default-features = false }
 num-traits = { version = "^0.2.12", default-features = false }
 thiserror = "^1.0.20"
 serde = { version = "^1.0.114", optional = true}
+capra-core = { path = "capra-core", default-features = false }
 
 [features]
 default = ["std"]
-std = ["time/default", "num-traits/default"]
-use-serde = ["serde/derive", "time/serde"]
+std = ["capra-core/std"]
+use-serde = ["capra-core/use-serde"]
