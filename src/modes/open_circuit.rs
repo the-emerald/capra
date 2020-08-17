@@ -4,12 +4,13 @@ use capra_core::common::gas::Gas;
 use capra_core::common::tank::Tank;
 use capra_core::common::time_taken;
 use capra_core::deco::deco_algorithm::DecoAlgorithm;
-use crate::planning::dive_result::DiveResult;
-use crate::planning::{DivePlan, PPO2_MAXIMUM_DECO, PPO2_MINIMUM};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter;
 use time::Duration;
+use crate::{PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
+use crate::dive_result::DiveResult;
+use crate::dive_plan::DivePlan;
 
 /// An open circuit dive plan.
 #[derive(Copy, Clone, Debug)]
