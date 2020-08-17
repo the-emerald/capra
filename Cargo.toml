@@ -16,10 +16,12 @@ name = "capra"
 path = "src/lib.rs"
 
 [dependencies]
-time = "^0.2.16"
-num-traits = "^0.2.12"
+time = { version = "^0.2.16" , default-features = false }
+num-traits = { version = "^0.2.12", default-features = false }
 thiserror = "^1.0.20"
 serde = { version = "^1.0.114", optional = true}
 
 [features]
+default = ["std"]
+std = ["time/default", "num-traits/default"]
 use-serde = ["serde/derive", "time/serde"]
