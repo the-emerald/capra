@@ -1,8 +1,6 @@
 //! Commonly used items for decompression models and dive planning
 
 use num_traits::cast::FromPrimitive;
-#[allow(unused_imports)] // Seriously, my IDE complains if I don't put that there.
-use num_traits::real::Real;
 use std::isize;
 use time::Duration;
 
