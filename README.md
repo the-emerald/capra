@@ -1,2 +1,2 @@
 # capra
-Diver decompression library
+Dive planning library. Uses `capra-core`.
