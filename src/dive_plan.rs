@@ -3,7 +3,6 @@ use capra_core::common::tank::Tank;
 use crate::dive_result::DiveResult;
 
 /// Trait for dive planning structs.
-#[cfg(feature = "std")]
 pub trait DivePlan<T: DecoAlgorithm> {
     /// Run the dive plan, returning a `DiveResult` that contains the results.
     fn plan(&self) -> DiveResult<T>;
