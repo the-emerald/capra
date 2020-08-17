@@ -1,15 +1,15 @@
-//! Diver decompression and dive planning library.
+//! Dive planning library
 //! # Quick example
 //! A quick example showing how to use this library:
 //! ```
-//! use capra::planning::DivePlan;
-//! use capra::{common, deco, planning};
 //! use time::Duration;
+//! use capra_core::{common, deco};
+//! use capra::DivePlan;
+//! use capra::modes::OpenCircuit;
 //!
 //! fn main() {
 //!     // Make a new gas
-//!     use capra::common::dive_segment::SegmentType::AscDesc;
-//! let air = common::Gas::new(21, 0, 79).unwrap();
+//!     let air = common::Gas::new(21, 0, 79).unwrap();
 //!
 //!     // Make a new ZHL16 decompression model
 //!     let zhl16 = deco::zhl16::ZHL16::new_by_variant(
@@ -32,7 +32,7 @@
 //!
 //!     let deco_gases = vec![(air, None)];
 //!     let segments = vec![(dive_segment, air)];
-//!     let open_circuit = planning::modes::OpenCircuit::new(
+//!     let open_circuit = OpenCircuit::new(
 //!         zhl16,
 //!         &deco_gases,
 //!         &segments,
@@ -55,6 +55,19 @@
 //! }
 //! ```
 
-pub mod common;
-pub mod deco;
-pub mod planning;
+pub mod dive_result;
+pub mod modes;
+pub mod dive_plan;
+
+pub use dive_plan::DivePlan;
+pub use dive_result::DiveResult;
+
+/// A default, placeholder minimum ppO2.
+pub const PPO2_MINIMUM: f64 = 0.18;
+
+/// A default, placeholder maximum ppO2 for use during bottom segments.
+pub const PPO2_MAXIMUM_DIVE: f64 = 1.4;
+
+/// A default, placeholder maximum ppO2 for use during decompression stops.
+pub const PPO2_MAXIMUM_DECO: f64 = 1.6;
+

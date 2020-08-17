@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Anson <git@anson-cheung.com>"]
 edition = "2018"
 license = "MIT"
-description = "Diver compression and dive planning library"
+description = "Dive planning library"
 repository = "https://github.com/the-emerald/capra"
 readme = "README.md"
 keywords = ["scuba", "diving", "decompression", "dive-plan"]
@@ -16,10 +16,9 @@ name = "capra"
 path = "src/lib.rs"
 
 [dependencies]
-time = "^0.2.16"
-num-traits = "^0.2.12"
-thiserror = "^1.0.20"
+time = { version = "^0.2.16"}
 serde = { version = "^1.0.114", optional = true}
+capra-core = { path = "capra-core" }
 
 [features]
-use-serde = ["serde/derive", "time/serde"]
+use-serde = ["capra-core/use-serde", "serde/derive"]

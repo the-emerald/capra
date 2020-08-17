@@ -6,6 +6,7 @@ use std::fmt::Debug;
 
 /// Trait for decompression models. This trait must be implemented for any custom decompression
 /// algorithms if they are to be used in dive plans with the [`DivePlan`] trait.
+#[cfg(feature = "std")]
 pub trait DecoAlgorithm: Copy + Clone + Debug {
     /// Apply a segment to the deco model.
     /// # Arguments
