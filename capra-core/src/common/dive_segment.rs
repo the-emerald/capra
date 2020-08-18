@@ -4,9 +4,10 @@ use crate::common::mtr_bar;
 use time::Duration;
 
 /// Represents errors that occur while working with DiveSegments.
-#[derive(thiserror::Error, Debug)]
+#[cfg_attr(feature = "std", derive(thiserror::Error))]
+#[derive(Debug)]
 pub enum DiveSegmentError {
-    #[error("segment type and start/end depths are inconsistent")]
+    #[cfg_attr(feature = "std", error("segment type and start/end depths are inconsistent"))]
     /// SegmentType supplied to create a DiveSegment were inconsistent with its parameters.
     IncorrectSegmentTypeError,
 }
