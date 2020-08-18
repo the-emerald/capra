@@ -14,7 +14,7 @@ keywords = ["scuba", "diving", "decompression"]
 [dependencies]
 time = { version = "^0.2.16" , default-features = false }
 num-traits = { version = "^0.2.12", default-features = false }
-thiserror = "^1.0.20"
+thiserror = { version = "^1.0.20", optional = true }
 serde = { version = "^1.0.114", optional = true}
 
 [features]
