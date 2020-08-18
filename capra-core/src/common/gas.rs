@@ -1,10 +1,10 @@
 use crate::common::mtr_bar;
 
 /// Represents errors that occur while working with Gases.
-#[cfg_attr(feature = "std", derive(thiserror::Error))]
+#[cfg_attr(feature = "use-thiserror", derive(thiserror::Error))]
 #[derive(Debug)]
 pub enum GasError {
-    #[cfg_attr(feature = "std", error("gas does not have total fraction of 1.0"))]
+    #[cfg_attr(feature = "use-thiserror", error("gas does not have total fraction of 1.0"))]
     /// The sum of all percentage gas fractions does not add up to 100.
     FractionError,
 }

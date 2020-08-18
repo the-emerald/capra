@@ -18,6 +18,7 @@ thiserror = { version = "^1.0.20", optional = true }
 serde = { version = "^1.0.114", optional = true}
 
 [features]
-default = ["std"]
+default = ["std", "use-thiserror"]
+use-thiserror = []
 std = ["time/default", "num-traits/default"]
 use-serde = ["serde/derive", "time/serde"]
