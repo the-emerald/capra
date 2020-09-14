@@ -1,6 +1,6 @@
 [package]
 name = "capra-core"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Anson <git@anson-cheung.com>"]
 description = "Diver compression library"
 license = "MIT"
@@ -18,6 +18,4 @@ thiserror = "^1.0.20"
 serde = { version = "^1.0.114", optional = true}
 
 [features]
-default = ["std"]
-std = ["time/default", "num-traits/default"]
 use-serde = ["serde/derive", "time/serde"]

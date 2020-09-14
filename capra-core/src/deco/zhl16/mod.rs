@@ -10,8 +10,6 @@ use crate::deco::zhl16::util::{
 use crate::deco::{TISSUE_COUNT, WATER_VAPOUR_PRESSURE};
 use std::f64::consts::{E, LN_2};
 use time::Duration;
-
-#[cfg(feature = "std")]
 use crate::deco::deco_algorithm::DecoAlgorithm;
 
 pub mod util;
@@ -395,7 +393,6 @@ impl ZHL16 {
     }
 }
 
-#[cfg(feature = "std")]
 impl DecoAlgorithm for ZHL16 {
     fn add_dive_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
         self.add_segment(segment, gas, metres_per_bar);

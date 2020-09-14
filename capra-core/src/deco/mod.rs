@@ -1,14 +1,11 @@
 //! Decompression models
 
-#[cfg(feature = "std")]
 pub mod deco_algorithm;
 
 pub mod tissue;
 pub mod zhl16;
 
-#[cfg(feature = "std")]
 pub use deco_algorithm::DecoAlgorithm;
-
 pub use tissue::Tissue;
 
 /// Number of tissues in a typical decompression algorithm.
