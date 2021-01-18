@@ -2,6 +2,7 @@ use crate::common;
 use crate::common::dive_segment::{DiveSegment, SegmentType};
 use crate::common::gas::Gas;
 use crate::common::time_taken;
+use crate::deco::deco_algorithm::DecoAlgorithm;
 use crate::deco::tissue::Tissue;
 use crate::deco::zhl16::util::{
     ZHL16B_HE_A, ZHL16B_HE_B, ZHL16B_HE_HALFLIFE, ZHL16B_N2_A, ZHL16B_N2_B, ZHL16B_N2_HALFLIFE,
@@ -10,13 +11,13 @@ use crate::deco::zhl16::util::{
 use crate::deco::{TISSUE_COUNT, WATER_VAPOUR_PRESSURE};
 use std::f64::consts::{E, LN_2};
 use time::Duration;
-use crate::deco::deco_algorithm::DecoAlgorithm;
 
+pub mod tissue_constants;
 pub mod util;
 pub mod variant;
 
+use crate::deco::zhl16::tissue_constants::TissueConstants;
 pub use util::*;
-
 pub use variant::Variant;
 
 /// A ZHL-16 decompression model of a diver.
@@ -28,23 +29,12 @@ pub use variant::Variant;
 pub struct ZHL16 {
     /// Current tissue model of the diver.
     tissue: Tissue,
+    /// Tissue constants of the diver
+    tissue_constants: TissueConstants,
     /// Current depth of the diver.
     diver_depth: usize,
-    /// Nitrogen A-values.
-    n2_a: [f64; TISSUE_COUNT],
-    /// Nitrogen B-values.
-    n2_b: [f64; TISSUE_COUNT],
-    /// Nitrogen half-lives.
-    n2_hl: [f64; TISSUE_COUNT],
-    /// Helium A-values.
-    he_a: [f64; TISSUE_COUNT],
-    /// Helium B-values.
-    he_b: [f64; TISSUE_COUNT],
-    /// Helium half-lives.
-    he_hl: [f64; TISSUE_COUNT],
-
+    /// First deco depth of the diver
     first_deco_depth: Option<usize>,
-
     /// GF Low value
     gf_low: f64,
     /// GF High value
@@ -66,61 +56,17 @@ impl ZHL16 {
     /// * `gf_high` - Gradient Factor high value to use when calculating deco stops
     pub fn new(
         tissue: Tissue,
-        n2_a: [f64; TISSUE_COUNT],
-        n2_b: [f64; TISSUE_COUNT],
-        n2_hl: [f64; TISSUE_COUNT],
-        he_a: [f64; TISSUE_COUNT],
-        he_b: [f64; TISSUE_COUNT],
-        he_hl: [f64; TISSUE_COUNT],
+        tissue_constants: TissueConstants,
         gf_low: usize,
         gf_high: usize,
     ) -> Self {
         Self {
             tissue,
+            tissue_constants,
             diver_depth: 0,
-            n2_a,
-            n2_b,
-            n2_hl,
-            he_a,
-            he_b,
-            he_hl,
-
             first_deco_depth: None,
             gf_low: gf_low as f64 / 100.0,
             gf_high: gf_high as f64 / 100.0,
-        }
-    }
-
-    /// Returns a ZHL16 model with the tissue loading constants of a defined variant.
-    /// # Arguments
-    /// * `tissue` - Tissue model of the diver before the dive
-    /// * `gf_low` - Gradient Factor low value to use when calculating deco stops
-    /// * `gf_high` - Gradient Factor high value to use when calculating deco stops
-    /// * `variant` - Variant to use
-    pub fn new_by_variant(tissue: Tissue, gfl: usize, gfh: usize, variant: Variant) -> Self {
-        match variant {
-            Variant::B => Self::new(
-                tissue,
-                ZHL16B_N2_A,
-                ZHL16B_N2_B,
-                ZHL16B_N2_HALFLIFE,
-                ZHL16B_HE_A,
-                ZHL16B_HE_B,
-                ZHL16B_HE_HALFLIFE,
-                gfl,
-                gfh,
-            ),
-            Variant::C => Self::new(
-                tissue,
-                ZHL16C_N2_A,
-                ZHL16C_N2_B,
-                ZHL16C_N2_HALFLIFE,
-                ZHL16C_HE_A,
-                ZHL16C_HE_B,
-                ZHL16C_HE_HALFLIFE,
-                gfl,
-                gfh,
-            ),
         }
     }
 
@@ -166,7 +112,7 @@ impl ZHL16 {
             let pio: f64 =
                 ZHL16::compensated_pressure(segment.start_depth(), metres_per_bar) * gas.fr_n2();
             let r = (rate as f64 / 10.0) * gas.fr_n2();
-            let k = LN_2 / self.n2_hl[idx];
+            let k = LN_2 / self.tissue_constants.n2_hl[idx];
             let pn: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
             *val = pn;
             self.tissue.p_t[idx] = pn;
@@ -178,7 +124,7 @@ impl ZHL16 {
             let pio: f64 =
                 ZHL16::compensated_pressure(segment.start_depth(), metres_per_bar) * gas.fr_he();
             let r = (rate as f64 / 10.0) * gas.fr_he();
-            let k = LN_2 / self.he_hl[idx];
+            let k = LN_2 / self.tissue_constants.he_hl[idx];
             let ph: f64 = ZHL16::depth_change_loading(t, po, pio, r, k);
             *val = ph;
             self.tissue.p_t[idx] += ph;
@@ -211,8 +157,10 @@ impl ZHL16 {
             let p = po
                 + (pi - po)
                     * (1.0
-                        - (2.0_f64
-                            .powf(-1.0 * segment.time().whole_minutes() as f64 / self.n2_hl[idx])));
+                        - (2.0_f64.powf(
+                            -1.0 * segment.time().whole_minutes() as f64
+                                / self.tissue_constants.n2_hl[idx],
+                        )));
             *val = p;
             self.tissue.p_t[idx] = p;
         }
@@ -223,8 +171,10 @@ impl ZHL16 {
             let p = po
                 + (pi - po)
                     * (1.0
-                        - (2.0_f64
-                            .powf(-1.0 * segment.time().whole_minutes() as f64 / self.he_hl[idx])));
+                        - (2.0_f64.powf(
+                            -1.0 * segment.time().whole_minutes() as f64
+                                / self.tissue_constants.he_hl[idx],
+                        )));
             *val = p;
             self.tissue.p_t[idx] += p;
         }
@@ -258,13 +208,15 @@ impl ZHL16 {
 
     /// Calculate the B-value of a compartment.
     fn tissue_b_value(&self, x: usize) -> f64 {
-        (self.n2_b[x] * self.tissue.p_n2[x] + self.he_b[x] * self.tissue.p_he[x])
+        (self.tissue_constants.n2_b[x] * self.tissue.p_n2[x]
+            + self.tissue_constants.he_b[x] * self.tissue.p_he[x])
             / (self.tissue.p_n2[x] + self.tissue.p_he[x])
     }
 
     /// Calculate the A-value of a compartment.
     fn tissue_a_value(&self, x: usize) -> f64 {
-        (self.n2_a[x] * self.tissue.p_n2[x] + self.he_a[x] * self.tissue.p_he[x])
+        (self.tissue_constants.n2_a[x] * self.tissue.p_n2[x]
+            + self.tissue_constants.he_a[x] * self.tissue.p_he[x])
             / (self.tissue.p_n2[x] + self.tissue.p_he[x])
     }
 
@@ -379,13 +331,11 @@ impl ZHL16 {
 
     fn add_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64) {
         match segment.segment_type() {
-            SegmentType::AscDesc => {
-                self.add_depth_change(segment, gas, metres_per_bar)
-            },
+            SegmentType::AscDesc => self.add_depth_change(segment, gas, metres_per_bar),
             SegmentType::DecoStop => {
                 self.add_bottom_segment(segment, gas, metres_per_bar);
                 self.update_first_deco_depth(segment.start_depth());
-            },
+            }
             _ => {
                 self.add_bottom_segment(segment, gas, metres_per_bar);
             }
