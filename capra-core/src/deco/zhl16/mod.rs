@@ -259,7 +259,10 @@ impl ZHL16 {
             in_limit = virtual_zhl16.find_ascent_ceiling(None)
                 < common::mtr_bar(stop_depth as f64, metres_per_bar)
                     - (common::mtr_bar(3.0, metres_per_bar) - 1.0);
-            stop_time += 1;
+
+            if !in_limit {
+                stop_time += 1;
+            }
         }
         DiveSegment::new(
             SegmentType::DecoStop,
