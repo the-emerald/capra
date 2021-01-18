@@ -1,6 +1,6 @@
 [package]
 name = "capra-core"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Anson <git@anson-cheung.com>"]
 description = "Diver compression library"
 license = "MIT"
