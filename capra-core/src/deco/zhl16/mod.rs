@@ -38,8 +38,7 @@ pub struct ZHL16 {
 }
 
 impl ZHL16 {
-    /// Returns a ZHL16 model with the given parameters. Use this if you have to supply all the tissue
-    /// loading constants by yourself. Otherwise, use [`ZHL16::new_by_variant`] instead.
+    /// Returns a ZHL16 model with the given parameters.
     /// # Arguments
     /// * `tissue` - Tissue model of the diver before the dive
     /// * `n2_a` - Nitrogen A-values to use

@@ -18,6 +18,8 @@ pub struct TissueConstants {
 }
 
 impl TissueConstants {
+    /// Returns a ZHL16 model with the given parameters.
+    /// Use this if you have to supply all the tissue loading constants by yourself. Otherwise, use `new_by_variant` instead.
     pub fn new(
         n2_a: [f64; TISSUE_COUNT],
         n2_b: [f64; TISSUE_COUNT],
