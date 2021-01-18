@@ -2,6 +2,7 @@ use crate::deco::zhl16::*;
 use crate::deco::TISSUE_COUNT;
 
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TissueConstants {
     /// Nitrogen A-values.
     pub(crate) n2_a: [f64; TISSUE_COUNT],
