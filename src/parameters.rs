@@ -1,4 +1,5 @@
 /// Basic parameters required to create a dive plan.
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, Debug)]
 pub struct DiveParameters {
     /// Ascent rate to use for planner-generated segments
