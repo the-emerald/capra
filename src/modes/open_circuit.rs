@@ -1,3 +1,4 @@
+use crate::parameters::DiveParameters;
 use crate::plan::DivePlan;
 use crate::result::DiveResult;
 use crate::{PPO2_MAXIMUM_DECO, PPO2_MINIMUM};
@@ -11,7 +12,6 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter;
 use time::Duration;
-use crate::parameters::DiveParameters;
 
 /// An open circuit dive plan.
 #[derive(Copy, Clone, Debug)]

@@ -57,10 +57,10 @@
 //! }
 //! ```
 
-pub mod plan;
-pub mod result;
 pub mod modes;
 pub mod parameters;
+pub mod plan;
+pub mod result;
 
 pub use plan::DivePlan;
 pub use result::DiveResult;

@@ -1,4 +1,4 @@
-/// Parameters for an open circuit dive plan.
+/// Basic parameters required to create a dive plan.
 #[derive(Copy, Clone, Debug)]
 pub struct DiveParameters {
     /// Ascent rate to use for planner-generated segments
