@@ -175,8 +175,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         );
 
         // If there are deco stops in between
-        if stops.iter().any(|x| x.segment_type() == DecoStop) && switch_point.is_some() {
-            let switch = switch_point.unwrap();
+        if let (Some(switch), true) = (switch_point, stops.iter().any(|x| x.segment_type() == DecoStop)) {
             // Rewind the algorithm
             virtual_deco = deco;
 
