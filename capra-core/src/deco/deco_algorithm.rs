@@ -2,11 +2,10 @@ use crate::common::dive_segment;
 use crate::common::dive_segment::DiveSegment;
 use crate::common::gas::Gas;
 use crate::deco::tissue::Tissue;
-use std::fmt::Debug;
 
 /// Trait for decompression models. This trait must be implemented for any custom decompression
 /// algorithms if they are to be used in dive plans with the [`DivePlan`] trait.
-pub trait DecoAlgorithm: Copy + Clone + Debug {
+pub trait DecoAlgorithm: Copy {
     /// Apply a segment to the deco model.
     /// # Arguments
     /// * `segment` - DiveSegment to apply.
