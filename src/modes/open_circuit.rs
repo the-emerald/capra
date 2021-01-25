@@ -1,3 +1,6 @@
+use crate::dive_plan::DivePlan;
+use crate::dive_result::DiveResult;
+use crate::{PPO2_MAXIMUM_DECO, PPO2_MINIMUM};
 use capra_core::common::dive_segment::SegmentType::{AscDesc, DecoStop};
 use capra_core::common::dive_segment::{DiveSegment, SegmentType};
 use capra_core::common::gas::Gas;
@@ -8,24 +11,21 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter;
 use time::Duration;
-use crate::{PPO2_MINIMUM, PPO2_MAXIMUM_DECO};
-use crate::dive_result::DiveResult;
-use crate::dive_plan::DivePlan;
 
 /// Parameters for an open circuit dive plan.
 // TODO: These set of params may be useful for other kinda of dive plans as well. Investigate
 #[derive(Copy, Clone, Debug)]
 pub struct OpenCircuitParams {
     /// Ascent rate to use for planner-generated segments
-    pub(crate) ascent_rate: isize,
+    pub ascent_rate: isize,
     /// Descent rate to use for planner-generated segments
-    pub(crate) descent_rate: isize,
+    pub descent_rate: isize,
     /// Depth of water required to induce 1 bar of pressure.
-    pub(crate) metres_per_bar: f64,
+    pub metres_per_bar: f64,
     /// Surface Air Consumption rate for bottom segments (measured in bar min^-1)
-    pub(crate) sac_bottom: usize,
+    pub sac_bottom: usize,
     /// Surface Air Consumption rate for bottom segments (measured in bar min^-1)
-    pub(crate) sac_deco: usize,
+    pub sac_deco: usize,
 }
 
 /// An open circuit dive plan.
@@ -38,7 +38,7 @@ pub struct OpenCircuit<'a, T: DecoAlgorithm> {
     /// Bottom segments of the dive and corresponding gas used
     bottom_segments: &'a [(DiveSegment, Gas)],
     /// Parameters
-    parameters: OpenCircuitParams
+    parameters: OpenCircuitParams,
 }
 
 impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
@@ -56,13 +56,13 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         deco_algorithm: T,
         deco_gases: &'a [(Gas, Option<usize>)],
         bottom_segments: &'a [(DiveSegment, Gas)],
-        parameters: OpenCircuitParams
+        parameters: OpenCircuitParams,
     ) -> Self {
         OpenCircuit {
             deco_algorithm,
             deco_gases,
             bottom_segments,
-            parameters
+            parameters,
         }
     }
 
@@ -128,7 +128,11 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
                         SegmentType::AscDesc,
                         start.0.end_depth(),
                         t.0.start_depth(),
-                        time_taken(self.parameters.descent_rate, start.0.end_depth(), t.0.start_depth()),
+                        time_taken(
+                            self.parameters.descent_rate,
+                            start.0.end_depth(),
+                            t.0.start_depth(),
+                        ),
                         self.parameters.ascent_rate,
                         self.parameters.descent_rate,
                     )
@@ -175,7 +179,10 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         );
 
         // If there are deco stops in between
-        if let (Some(switch), true) = (switch_point, stops.iter().any(|x| x.segment_type() == DecoStop)) {
+        if let (Some(switch), true) = (
+            switch_point,
+            stops.iter().any(|x| x.segment_type() == DecoStop),
+        ) {
             // Rewind the algorithm
             virtual_deco = deco;
 
@@ -277,11 +284,14 @@ impl<'a, T: DecoAlgorithm> DivePlan<T> for OpenCircuit<'a, T> {
         // Gas planning
         let mut gas_plan: HashMap<Gas, usize> = HashMap::new();
         for (segment, gas) in &total_segments {
-            let gas_consumed = match segment.segment_type() {
-                SegmentType::DecoStop => segment.gas_consumed(self.parameters.sac_deco, self.parameters.metres_per_bar),
-                SegmentType::NoDeco => 0, // No deco segments aren't actually segments
-                _ => segment.gas_consumed(self.parameters.sac_bottom, self.parameters.metres_per_bar),
-            };
+            let gas_consumed =
+                match segment.segment_type() {
+                    SegmentType::DecoStop => segment
+                        .gas_consumed(self.parameters.sac_deco, self.parameters.metres_per_bar),
+                    SegmentType::NoDeco => 0, // No deco segments aren't actually segments
+                    _ => segment
+                        .gas_consumed(self.parameters.sac_bottom, self.parameters.metres_per_bar),
+                };
             let gas_needed = *(gas_plan.entry(*gas).or_insert(0)) + gas_consumed;
             gas_plan.insert(*gas, gas_needed);
         }

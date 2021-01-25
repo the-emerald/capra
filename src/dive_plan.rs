@@ -1,6 +1,6 @@
-use capra_core::deco::deco_algorithm::DecoAlgorithm;
-use capra_core::common::tank::Tank;
 use crate::dive_result::DiveResult;
+use capra_core::common::tank::Tank;
+use capra_core::deco::deco_algorithm::DecoAlgorithm;
 
 /// Trait for dive planning structs.
 pub trait DivePlan<T: DecoAlgorithm> {
