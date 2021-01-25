@@ -41,12 +41,7 @@ impl ZHL16 {
     /// Returns a ZHL16 model with the given parameters.
     /// # Arguments
     /// * `tissue` - Tissue model of the diver before the dive
-    /// * `n2_a` - Nitrogen A-values to use
-    /// * `n2_b` - Nitrogen B-values to use
-    /// * `n2_hl` - Nitrogen half-lives to use
-    /// * `he_a` - Helium A-values to use
-    /// * `he_b` - Helium B-values to use
-    /// * `he_hl` - Helium half-lives to use
+    /// * `tissue_constants` - Tissue constants of the diver
     /// * `gf_low` - Gradient Factor low value to use when calculating deco stops
     /// * `gf_high` - Gradient Factor high value to use when calculating deco stops
     pub fn new(
