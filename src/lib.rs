@@ -57,12 +57,13 @@
 //! }
 //! ```
 
-pub mod dive_plan;
-pub mod dive_result;
+pub mod plan;
+pub mod result;
 pub mod modes;
+pub mod parameters;
 
-pub use dive_plan::DivePlan;
-pub use dive_result::DiveResult;
+pub use plan::DivePlan;
+pub use result::DiveResult;
 
 /// A default, placeholder minimum ppO2.
 pub const PPO2_MINIMUM: f64 = 0.18;

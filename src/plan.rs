@@ -1,4 +1,4 @@
-use crate::dive_result::DiveResult;
+use crate::result::DiveResult;
 use capra_core::common::tank::Tank;
 use capra_core::deco::deco_algorithm::DecoAlgorithm;
 

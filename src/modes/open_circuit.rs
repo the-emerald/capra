@@ -1,5 +1,5 @@
-use crate::dive_plan::DivePlan;
-use crate::dive_result::DiveResult;
+use crate::plan::DivePlan;
+use crate::result::DiveResult;
 use crate::{PPO2_MAXIMUM_DECO, PPO2_MINIMUM};
 use capra_core::common::dive_segment::SegmentType::{AscDesc, DecoStop};
 use capra_core::common::dive_segment::{DiveSegment, SegmentType};
@@ -11,22 +11,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter;
 use time::Duration;
-
-/// Parameters for an open circuit dive plan.
-// TODO: These set of params may be useful for other kinda of dive plans as well. Investigate
-#[derive(Copy, Clone, Debug)]
-pub struct OpenCircuitParams {
-    /// Ascent rate to use for planner-generated segments
-    pub ascent_rate: isize,
-    /// Descent rate to use for planner-generated segments
-    pub descent_rate: isize,
-    /// Depth of water required to induce 1 bar of pressure.
-    pub metres_per_bar: f64,
-    /// Surface Air Consumption rate for bottom segments (measured in bar min^-1)
-    pub sac_bottom: usize,
-    /// Surface Air Consumption rate for bottom segments (measured in bar min^-1)
-    pub sac_deco: usize,
-}
+use crate::parameters::DiveParameters;
 
 /// An open circuit dive plan.
 #[derive(Copy, Clone, Debug)]
@@ -38,7 +23,7 @@ pub struct OpenCircuit<'a, T: DecoAlgorithm> {
     /// Bottom segments of the dive and corresponding gas used
     bottom_segments: &'a [(DiveSegment, Gas)],
     /// Parameters
-    parameters: OpenCircuitParams,
+    parameters: DiveParameters,
 }
 
 impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
@@ -56,7 +41,7 @@ impl<'a, T: DecoAlgorithm> OpenCircuit<'a, T> {
         deco_algorithm: T,
         deco_gases: &'a [(Gas, Option<usize>)],
         bottom_segments: &'a [(DiveSegment, Gas)],
-        parameters: OpenCircuitParams,
+        parameters: DiveParameters,
     ) -> Self {
         OpenCircuit {
             deco_algorithm,
