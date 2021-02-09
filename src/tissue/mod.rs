@@ -34,6 +34,8 @@ impl Tissue {
     pub fn p_he(&self) -> [f64; TISSUE_COUNT] {
         self.p_n2
     }
+
+    // TODO: Methods to work with tissues
 }
 
 impl Default for Tissue {
