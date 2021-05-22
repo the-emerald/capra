@@ -1,10 +1,9 @@
-use crate::pressure::Pressure;
-use crate::water_density::WaterDensity;
 use crate::units::depth::Depth;
-use crate::units::water_density::WaterDensity;
 use crate::units::pressure::Pressure;
+use crate::units::water_density::WaterDensity;
 
 // TODO: Gas error types
+#[derive(Debug)]
 pub enum GasError {
     FractionError,
 }
@@ -49,7 +48,7 @@ impl Gas {
     }
 
     pub fn equivalent_narcotic_depth(&self, depth: Depth) -> Depth {
-        Depth(depth.0 + 10 as f64 * (1.0 - self.fr_he()) - 10.0 as u32)
+        Depth(((depth.0 + 10) as f64 * (1.0 - self.fr_he()) - 10.0) as u32)
     }
 
     pub fn ppo2_in_range(&self, depth: Depth, min: Pressure, max: Pressure) -> bool {

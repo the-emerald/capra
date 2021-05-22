@@ -1,11 +1,11 @@
-use time::Duration;
+use crate::segment::DiveSegmentError::IncorrectSegmentType;
 use crate::units::depth::Depth;
 use crate::units::rate::Rate;
-use crate::segment::DiveSegmentError::IncorrectSegmentType;
+use time::Duration;
 
 // TODO: Segment error
 pub enum DiveSegmentError {
-    IncorrectSegmentType
+    IncorrectSegmentType,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -13,7 +13,7 @@ pub enum SegmentType {
     NoDeco,
     DecoStop,
     Bottom,
-    AscDesc
+    AscDesc,
 }
 
 pub struct Segment {
@@ -35,9 +35,9 @@ impl Segment {
         descent_rate: Rate,
     ) -> Result<Self, DiveSegmentError> {
         match (segment_type, start_depth == end_depth) {
-            (SegmentType::AscDesc, true) => return Err(IncorrectSegmentTypeError),
+            (SegmentType::AscDesc, true) => return Err(IncorrectSegmentType),
             (SegmentType::AscDesc, false) => {}
-            (_, false) => return Err(IncorrectSegmentTypeError),
+            (_, false) => return Err(IncorrectSegmentType),
             _ => {}
         }
 
@@ -47,7 +47,7 @@ impl Segment {
             end_depth,
             time,
             ascent_rate,
-            descent_rate
+            descent_rate,
         })
     }
 
@@ -74,6 +74,4 @@ impl Segment {
     pub fn descent_rate(&self) -> Rate {
         self.descent_rate
     }
-
 }
-
