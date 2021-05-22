@@ -1,6 +1,8 @@
 use crate::pressure::Pressure;
 use crate::water_density::WaterDensity;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use crate::units::water_density::WaterDensity;
+use crate::units::pressure::Pressure;
 
 #[derive(Copy, Clone, Debug, Default, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Depth(pub u32);

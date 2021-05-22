@@ -1,6 +1,15 @@
-use crate::depth::Depth;
-use crate::water_density::WaterDensity;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use crate::units::water_density::WaterDensity;
+use crate::units::depth::Depth;
+
+/// A default, placeholder minimum ppO2.
+pub const PPO2_MINIMUM: f64 = 0.18;
+
+/// A default, placeholder maximum ppO2 for use during bottom segments.
+pub const PPO2_MAXIMUM_DIVE: f64 = 1.4;
+
+/// A default, placeholder maximum ppO2 for use during decompression stops.
+pub const PPO2_MAXIMUM_DECO: f64 = 1.6;
 
 #[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
 pub struct Pressure(pub f64);
