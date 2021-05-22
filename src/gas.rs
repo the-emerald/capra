@@ -1,6 +1,8 @@
-use crate::depth::Depth;
 use crate::pressure::Pressure;
 use crate::water_density::WaterDensity;
+use crate::units::depth::Depth;
+use crate::units::water_density::WaterDensity;
+use crate::units::pressure::Pressure;
 
 // TODO: Gas error types
 pub enum GasError {

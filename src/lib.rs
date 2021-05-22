@@ -1,9 +1,8 @@
-pub mod depth;
 pub mod gas;
-pub mod pressure;
 pub mod segment;
 pub mod tissue;
-pub mod water_density;
+
+pub mod units;
 
 pub mod deco;
 pub mod plan;
