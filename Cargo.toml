@@ -18,7 +18,6 @@ path = "src/lib.rs"
 [dependencies]
 time = { version = "^0.2.16"}
 serde = { version = "^1.0.114", optional = true}
-capra-core = { version = "^0.4.0" }
 
 [features]
-use-serde = ["capra-core/use-serde", "serde/derive"]
+use-serde = ["serde/derive"]
