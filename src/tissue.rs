@@ -12,12 +12,12 @@ impl Tissue {
         Self { p_n2, p_he }
     }
 
-    pub fn p_n2(&self) -> &mut [Pressure; TISSUE_COUNT] {
-        todo!()
+    pub fn p_n2(&mut self) -> &mut [Pressure; TISSUE_COUNT] {
+        &mut self.p_n2
     }
 
-    pub fn p_he(&self) -> &mut [Pressure; TISSUE_COUNT] {
-        todo!()
+    pub fn p_he(&mut self) -> &mut [Pressure; TISSUE_COUNT] {
+        &mut self.p_he
     }
 }
 
