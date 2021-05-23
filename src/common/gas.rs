@@ -13,11 +13,11 @@ pub enum GasError {
 #[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Gas {
     /// Percentage fraction of oxygen in the mix.
-    o2: usize,
+    o2: u32,
     /// Percentage fraction of helium in the mix.
-    he: usize,
+    he: u32,
     /// Percentage fraction of nitrogen in the mix.
-    n2: usize,
+    n2: u32,
 }
 
 /// Shorthand for creating a Gas, in a style similar to mix notation (O2/He)
@@ -38,7 +38,7 @@ impl Gas {
     /// * `n2` - Percentage fraction of nitrogen in the mix.
     /// # Errors
     /// This function will return a [`GasError`] if the percentage fractions do not add up to 100.
-    pub fn new(o2: usize, he: usize, n2: usize) -> Result<Self, GasError> {
+    pub fn new(o2: u32, he: u32, n2: u32) -> Result<Self, GasError> {
         if o2 + he + n2 != 100 {
             return Err(GasError::FractionError);
         }

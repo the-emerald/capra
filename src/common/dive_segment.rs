@@ -2,6 +2,7 @@ use crate::common::dive_segment::DiveSegmentError::IncorrectSegmentTypeError;
 use crate::common::dive_segment::SegmentType::AscDesc;
 use crate::common::mtr_bar;
 use time::Duration;
+use crate::common::depth::Depth;
 
 /// Represents errors that occur while working with DiveSegments.
 #[derive(thiserror::Error, Debug)]
@@ -32,15 +33,15 @@ pub struct DiveSegment {
     /// Type of this segment. See [`SegmentType`].
     segment_type: SegmentType,
     /// Depth at the beginning of segment.
-    start_depth: usize,
+    start_depth: Depth,
     /// Depth at the end of segment.
-    end_depth: usize,
+    end_depth: Depth,
     /// Duration of the segment.
     time: Duration,
     /// Ascent rate (measured in m min^-1)
-    ascent_rate: isize,
+    ascent_rate: i32,
     /// Descent rate (measured in m min^-1)
-    descent_rate: isize,
+    descent_rate: i32,
 }
 
 impl DiveSegment {
@@ -58,11 +59,11 @@ impl DiveSegment {
     /// * `segment-type` is *not* `AscDesc` but start and end depths *do not* match.
     pub fn new(
         segment_type: SegmentType,
-        start_depth: usize,
-        end_depth: usize,
+        start_depth: Depth,
+        end_depth: Depth,
         time: Duration,
-        ascent_rate: isize,
-        descent_rate: isize,
+        ascent_rate: i32,
+        descent_rate: i32,
     ) -> Result<Self, DiveSegmentError> {
         // Only allow AscDesc segments with a differing start/end depth.
         // As well as any other segment type without a consistent start/end depth,
@@ -89,12 +90,12 @@ impl DiveSegment {
     }
 
     /// Returns the start depth of the segment.
-    pub fn start_depth(&self) -> usize {
+    pub fn start_depth(&self) -> Depth {
         self.start_depth
     }
 
     /// Returns the end depth of the segment.
-    pub fn end_depth(&self) -> usize {
+    pub fn end_depth(&self) -> Depth {
         self.end_depth
     }
 
@@ -104,12 +105,12 @@ impl DiveSegment {
     }
 
     /// Returns the ascent rate of the segment.
-    pub fn ascent_rate(&self) -> isize {
+    pub fn ascent_rate(&self) -> i32 {
         self.ascent_rate
     }
 
     /// Returns the descent rate of the segment.
-    pub fn descent_rate(&self) -> isize {
+    pub fn descent_rate(&self) -> i32 {
         self.descent_rate
     }
 

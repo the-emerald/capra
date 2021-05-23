@@ -2,6 +2,7 @@ use crate::common::dive_segment;
 use crate::common::dive_segment::DiveSegment;
 use crate::common::gas::Gas;
 use crate::deco::tissue::Tissue;
+use crate::common::water_density::WaterDensity;
 
 /// Trait for decompression models. This trait must be implemented for any custom decompression
 /// algorithms if they are to be used in dive plans with the [`DivePlan`] trait.
@@ -11,7 +12,7 @@ pub trait DecoAlgorithm: Copy {
     /// * `segment` - DiveSegment to apply.
     /// * `gas` - Gas that is being consumed in this segment.
     /// * `metres_per_bar` - Depth of water required to induce 1 bar of pressure.
-    fn add_dive_segment(&mut self, segment: &DiveSegment, gas: &Gas, metres_per_bar: f64);
+    fn add_dive_segment(&mut self, segment: &DiveSegment, gas: &Gas, density: WaterDensity);
 
     /// Surface the deco model, returning the mandatory decompression stops / remaining no-decompression
     /// time along the way.
@@ -23,7 +24,7 @@ pub trait DecoAlgorithm: Copy {
         ascent_rate: isize,
         descent_rate: isize,
         gas: &Gas,
-        metres_per_bar: f64,
+        density: WaterDensity,
     ) -> Vec<dive_segment::DiveSegment>;
 
     /// Get the tissue loadings of the model
