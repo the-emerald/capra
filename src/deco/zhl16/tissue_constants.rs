@@ -101,6 +101,30 @@ impl TissueConstants {
         }
     }
 
+    pub fn n2_a(&self) -> [f64; 16] {
+        self.n2_a
+    }
+
+    pub fn n2_b(&self) -> [f64; 16] {
+        self.n2_b
+    }
+
+    pub fn n2_hl(&self) -> [f64; 16] {
+        self.n2_hl
+    }
+
+    pub fn he_a(&self) -> [f64; 16] {
+        self.he_a
+    }
+
+    pub fn he_b(&self) -> [f64; 16] {
+        self.he_b
+    }
+
+    pub fn he_hl(&self) -> [f64; 16] {
+        self.he_hl
+    }
+
     pub fn new_by_variant(variant: Variant) -> Self {
         match variant {
             Variant::B => Self::new(

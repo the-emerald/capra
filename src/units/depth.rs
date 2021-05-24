@@ -1,4 +1,4 @@
-use crate::units::pressure::Pressure;
+use crate::units::pressure::{Pressure, WATER_VAPOUR_PRESSURE};
 use crate::units::water_density::WaterDensity;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
@@ -8,6 +8,14 @@ pub struct Depth(pub u32);
 impl Depth {
     pub fn pressure(&self, density: WaterDensity) -> Pressure {
         Pressure((self.0 as f64 / density.0) + 1.0)
+    }
+
+    pub fn compensated_pressure(&self, density: WaterDensity) -> Pressure {
+        self.pressure(density) - WATER_VAPOUR_PRESSURE
+    }
+
+    pub fn delta(&self, rhs: Depth) -> Depth {
+        *self.max(&rhs) - *self.min(&rhs)
     }
 }
 

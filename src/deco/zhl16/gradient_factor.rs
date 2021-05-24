@@ -1,3 +1,4 @@
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct GradientFactor {
     low: u8,
     high: u8,
@@ -12,8 +13,16 @@ impl GradientFactor {
         self.low
     }
 
+    pub fn fr_low(&self) -> f64 {
+        self.low as f64 / 100.0
+    }
+
     pub fn high(&self) -> u8 {
         self.high
+    }
+
+    pub fn fr_high(&self) -> f64 {
+        self.high as f64 / 100.0
     }
 }
 

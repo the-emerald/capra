@@ -65,3 +65,9 @@ impl ZHL16Builder {
         }
     }
 }
+
+impl Default for ZHL16Builder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
