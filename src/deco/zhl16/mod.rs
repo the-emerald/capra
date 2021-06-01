@@ -1,12 +1,12 @@
 use crate::deco::zhl16::gradient_factor::GradientFactor;
 use crate::deco::zhl16::tissue_constants::TissueConstants;
 use crate::deco::DecoAlgorithm;
+use crate::environment::Environment;
 use crate::gas::Gas;
 use crate::segment::{Segment, SegmentType};
 use crate::tissue::Tissue;
 use crate::units::depth::Depth;
 use crate::units::pressure::Pressure;
-use crate::units::water_density::WaterDensity;
 use std::f64::consts::{E, LN_2};
 
 pub mod builder;
@@ -28,7 +28,7 @@ pub struct ZHL16 {
 }
 
 impl ZHL16 {
-    fn add_flat_segment_inner(&mut self, segment: &Segment, gas: &Gas, density: WaterDensity) {
+    fn add_flat_segment_inner(&mut self, segment: &Segment, gas: &Gas, environment: Environment) {
         todo!()
     }
 
@@ -36,7 +36,7 @@ impl ZHL16 {
         &mut self,
         segment: &Segment,
         gas: &Gas,
-        density: WaterDensity,
+        environment: Environment,
     ) {
         let delta = segment.end_depth().delta(segment.start_depth());
         let rate = if delta > Depth(0) {
@@ -51,7 +51,8 @@ impl ZHL16 {
         for (idx, val) in self.tissue.p_n2().iter_mut().enumerate() {
             // Initial value
             let po = *val;
-            let pio = segment.start_depth().compensated_pressure(density) * Pressure(gas.fr_n2());
+            let pio =
+                segment.start_depth().compensated_pressure(environment) * Pressure(gas.fr_n2());
 
             let r = (rate.0 as f64 / 10.0) * gas.fr_n2();
             let k = LN_2 / self.tissue_constants.n2_hl()[idx];
@@ -63,7 +64,8 @@ impl ZHL16 {
         for (idx, val) in self.tissue.p_he().iter_mut().enumerate() {
             // Initial value
             let po = *val;
-            let pio = segment.start_depth().compensated_pressure(density) * Pressure(gas.fr_he());
+            let pio =
+                segment.start_depth().compensated_pressure(environment) * Pressure(gas.fr_he());
 
             let r = (rate.0 as f64 / 10.0) * gas.fr_he();
             let k = LN_2 / self.tissue_constants.he_hl()[idx];
@@ -96,18 +98,18 @@ impl ZHL16 {
 }
 
 impl DecoAlgorithm for ZHL16 {
-    fn add_segment(mut self, segment: &Segment, gas: &Gas, density: WaterDensity) -> Self {
+    fn add_segment(mut self, segment: &Segment, gas: &Gas, environment: Environment) -> Self {
         match segment.segment_type() {
             SegmentType::NoDeco => panic!("no-deco segment applied to deco algorithm"),
             SegmentType::DecoStop => {
-                self.add_flat_segment_inner(segment, gas, density);
+                self.add_flat_segment_inner(segment, gas, environment);
                 self.set_first_deco_depth(segment.start_depth());
             }
             SegmentType::Bottom => {
-                self.add_flat_segment_inner(segment, gas, density);
+                self.add_flat_segment_inner(segment, gas, environment);
             }
             SegmentType::AscDesc => {
-                self.add_depth_change_segment_inner(segment, gas, density);
+                self.add_depth_change_segment_inner(segment, gas, environment);
             }
         }
         self

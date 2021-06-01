@@ -1,6 +1,6 @@
 use crate::units::depth::Depth;
 use crate::units::pressure::Pressure;
-use crate::units::water_density::WaterDensity;
+use crate::environment::Environment;
 
 // TODO: Gas error types
 #[derive(Debug)]
@@ -51,20 +51,20 @@ impl Gas {
         Depth(((depth.0 + 10) as f64 * (1.0 - self.fr_he()) - 10.0) as u32)
     }
 
-    pub fn ppo2_in_range(&self, depth: Depth, min: Pressure, max: Pressure) -> bool {
-        let ppo2 = self.pp_o2(depth, WaterDensity(10000.0));
+    pub fn ppo2_in_range(&self, depth: Depth, min: Pressure, max: Pressure, environment: Environment) -> bool {
+        let ppo2 = self.pp_o2(depth, environment);
         ppo2 >= min && ppo2 <= max
     }
 
-    pub fn pp_o2(&self, depth: Depth, density: WaterDensity) -> Pressure {
-        Pressure(depth.pressure(density).0 * self.fr_o2())
+    pub fn pp_o2(&self, depth: Depth, environment: Environment) -> Pressure {
+        Pressure(depth.pressure(environment).0 * self.fr_o2())
     }
 
-    pub fn pp_he(&self, depth: Depth, density: WaterDensity) -> Pressure {
-        Pressure(depth.pressure(density).0 * self.fr_he())
+    pub fn pp_he(&self, depth: Depth, environment: Environment) -> Pressure {
+        Pressure(depth.pressure(environment).0 * self.fr_he())
     }
 
-    pub fn pp_n2(&self, depth: Depth, density: WaterDensity) -> Pressure {
-        Pressure(depth.pressure(density).0 * self.fr_n2())
+    pub fn pp_n2(&self, depth: Depth, environment: Environment) -> Pressure {
+        Pressure(depth.pressure(environment).0 * self.fr_n2())
     }
 }

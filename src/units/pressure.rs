@@ -1,5 +1,5 @@
+use crate::environment::Environment;
 use crate::units::depth::Depth;
-use crate::units::water_density::WaterDensity;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 /// A default, placeholder minimum ppO2.
@@ -17,8 +17,8 @@ pub const WATER_VAPOUR_PRESSURE: Pressure = Pressure(0.06257);
 pub struct Pressure(pub f64);
 
 impl Pressure {
-    pub fn equivalent_depth(&self, density: &WaterDensity) -> Depth {
-        Depth(((self.0 - 1.0) * density.meters_per_bar()) as u32)
+    pub fn equivalent_depth(&self, environment: Environment) -> Depth {
+        Depth(((self.0 - 1.0) * environment.water_density().meters_per_bar()) as u32)
     }
 }
 
