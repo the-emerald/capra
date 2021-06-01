@@ -88,14 +88,17 @@ impl ZHL16 {
     }
 
     fn set_first_deco_depth(&mut self, depth: Depth) {
-        todo!()
+        match self.first_deco_depth {
+            None => self.first_deco_depth = Some(depth),
+            Some(_) => {}
+        }
     }
 }
 
 impl DecoAlgorithm for ZHL16 {
     fn add_segment(mut self, segment: &Segment, gas: &Gas, density: WaterDensity) -> Self {
         match segment.segment_type() {
-            SegmentType::NoDeco => panic!("mo-deco segment applied to deco algorithm"),
+            SegmentType::NoDeco => panic!("no-deco segment applied to deco algorithm"),
             SegmentType::DecoStop => {
                 self.add_flat_segment_inner(segment, gas, density);
                 self.set_first_deco_depth(segment.start_depth());
