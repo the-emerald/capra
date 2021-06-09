@@ -1,12 +1,14 @@
 use crate::deco::zhl16::gradient_factor::GradientFactor;
 use crate::deco::zhl16::tissue_constants::TissueConstants;
-use crate::deco::DecoAlgorithm;
+use crate::deco::{DecoAlgorithm, TISSUE_COUNT};
 use crate::environment::Environment;
 use crate::gas::Gas;
 use crate::segment::{Segment, SegmentType};
 use crate::tissue::Tissue;
 use crate::units::depth::Depth;
 use crate::units::pressure::Pressure;
+use crate::units::water_density::WaterDensity;
+use itertools::izip;
 use std::f64::consts::{E, LN_2};
 
 pub mod builder;
@@ -14,6 +16,7 @@ pub mod gradient_factor;
 pub mod tissue_constants;
 pub mod variant;
 
+#[derive(Copy, Clone, Debug)]
 pub struct ZHL16 {
     /// Current tissue model of the diver.
     tissue: Tissue,
@@ -31,7 +34,7 @@ impl ZHL16 {
     fn add_flat_segment_inner(&mut self, segment: &Segment, gas: &Gas, environment: Environment) {
         for (pressure, half_life) in self
             .tissue
-            .p_n2()
+            .p_n2_mut()
             .iter_mut()
             .zip(self.tissue_constants.n2_hl().iter())
         {
@@ -46,7 +49,7 @@ impl ZHL16 {
 
         for (pressure, half_life) in self
             .tissue
-            .p_he()
+            .p_he_mut()
             .iter_mut()
             .zip(self.tissue_constants.he_hl().iter())
         {
@@ -82,7 +85,7 @@ impl ZHL16 {
         // Nitrogen
         for (pressure, half_life) in self
             .tissue
-            .p_n2()
+            .p_n2_mut()
             .iter_mut()
             .zip(self.tissue_constants.n2_hl().iter())
         {
@@ -97,7 +100,7 @@ impl ZHL16 {
         // Helium
         for (pressure, half_life) in self
             .tissue
-            .p_he()
+            .p_he_mut()
             .iter_mut()
             .zip(self.tissue_constants.n2_hl().iter())
         {
@@ -128,6 +131,31 @@ impl ZHL16 {
     fn set_first_deco_depth(&mut self, depth: Depth) {
         self.first_deco_depth = self.first_deco_depth.or(Some(depth));
     }
+
+    fn fr_gf_at_depth(&self, depth: Depth) -> f64 {
+        self.first_deco_depth
+            .map(|deco_depth| {
+                if deco_depth > Depth(0) {
+                    // Only calculate if below surface
+                    self.gf.fr_high()
+                        + ((self.gf.fr_high() - self.gf.fr_low()) / (0.0 - deco_depth.0 as f64))
+                            * (depth.0 as f64)
+                } else {
+                    // By definition GFH is on the surface
+                    self.gf.fr_high()
+                }
+            })
+            // By definition, when decompression hasn't started, use GFH.
+            .unwrap_or_else(|| self.gf.fr_high())
+    }
+
+    fn tissue_ab_value(n2_ab: f64, he_ab: f64, p_n2: Pressure, p_he: Pressure) -> f64 {
+        (n2_ab * p_n2.0 + he_ab * p_he.0) / (p_n2 + p_he).0
+    }
+
+    fn tissue_ceiling(gf: f64, p_n2: Pressure, p_he: Pressure, a: f64, b: f64) -> Pressure {
+        Pressure(((p_n2 + p_he).0 - (a * gf)) / (gf / b + 1.0 - gf))
+    }
 }
 
 impl DecoAlgorithm for ZHL16 {
@@ -151,6 +179,26 @@ impl DecoAlgorithm for ZHL16 {
     }
 
     fn ascent_ceiling(&self) -> Pressure {
-        todo!()
+        let mut ceilings: [Pressure; TISSUE_COUNT] = [Pressure::default(); TISSUE_COUNT];
+        let gf = self.fr_gf_at_depth(self.diver_depth);
+
+        for (ceil, n2_a, he_a, n2_b, he_b, p_n2, p_he) in izip!(
+            &mut ceilings,
+            self.tissue_constants.n2_a().iter(),
+            self.tissue_constants.he_a().iter(),
+            self.tissue_constants.n2_b().iter(),
+            self.tissue_constants.he_b().iter(),
+            self.tissue.p_n2().iter(),
+            self.tissue.p_he().iter(),
+        ) {
+            let a = ZHL16::tissue_ab_value(*n2_a, *he_a, *p_n2, *p_he);
+            let b = ZHL16::tissue_ab_value(*n2_b, *he_b, *p_n2, *p_he);
+            *ceil = ZHL16::tissue_ceiling(gf, *p_n2, *p_he, a, b);
+        }
+
+        *ceilings
+            .iter()
+            .min_by(|&&a, &b| a.partial_cmp(b).unwrap())
+            .unwrap()
     }
 }

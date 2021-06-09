@@ -73,6 +73,7 @@ pub const ZHL16C_HE_B: [f64; 16] = [
     0.9122, 0.9171, 0.9217, 0.9267,
 ];
 
+#[derive(Copy, Clone, Debug)]
 pub struct TissueConstants {
     n2_a: [f64; TISSUE_COUNT],
     n2_b: [f64; TISSUE_COUNT],
