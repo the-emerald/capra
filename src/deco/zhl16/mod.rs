@@ -29,7 +29,39 @@ pub struct ZHL16 {
 
 impl ZHL16 {
     fn add_flat_segment_inner(&mut self, segment: &Segment, gas: &Gas, environment: Environment) {
-        todo!()
+        for (pressure, half_life) in self
+            .tissue
+            .p_n2()
+            .iter_mut()
+            .zip(self.tissue_constants.n2_hl().iter())
+        {
+            let pi = segment.end_depth().compensated_pressure(density) * Pressure(gas.fr_n2());
+            *pressure = ZHL16::flat_loading(
+                *pressure,
+                pi,
+                segment.time().whole_minutes() as f64,
+                *half_life,
+            );
+        }
+
+        for (pressure, half_life) in self
+            .tissue
+            .p_he()
+            .iter_mut()
+            .zip(self.tissue_constants.he_hl().iter())
+        {
+            let pi = segment.end_depth().compensated_pressure(density) * Pressure(gas.fr_n2());
+            *pressure = ZHL16::flat_loading(
+                *pressure,
+                pi,
+                segment.time().whole_minutes() as f64,
+                *half_life,
+            );
+        }
+    }
+
+    fn flat_loading(po: Pressure, pi: Pressure, time: f64, half_life: f64) -> Pressure {
+        po + (pi - po) * Pressure(1.0 - (2.0_f64.powf(-1.0 * time / half_life)))
     }
 
     fn add_depth_change_segment_inner(
@@ -113,6 +145,8 @@ impl DecoAlgorithm for ZHL16 {
                 self.add_depth_change_segment_inner(segment, gas, environment);
             }
         }
+        self.diver_depth = segment.end_depth();
+
         self
     }
 
