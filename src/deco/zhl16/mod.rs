@@ -48,29 +48,33 @@ impl ZHL16 {
         let time_fr = segment.time().whole_seconds() as f64 / 60.0;
 
         // Nitrogen
-        for (idx, val) in self.tissue.p_n2().iter_mut().enumerate() {
-            // Initial value
-            let po = *val;
+        for (pressure, half_life) in self
+            .tissue
+            .p_n2()
+            .iter_mut()
+            .zip(self.tissue_constants.n2_hl().iter())
+        {
             let pio =
                 segment.start_depth().compensated_pressure(environment) * Pressure(gas.fr_n2());
-
             let r = (rate.0 as f64 / 10.0) * gas.fr_n2();
-            let k = LN_2 / self.tissue_constants.n2_hl()[idx];
+            let k = LN_2 / half_life;
 
-            *val = ZHL16::depth_change_loading(time_fr, po, pio, r, k);
+            *pressure = ZHL16::depth_change_loading(time_fr, *pressure, pio, r, k);
         }
 
         // Helium
-        for (idx, val) in self.tissue.p_he().iter_mut().enumerate() {
-            // Initial value
-            let po = *val;
+        for (pressure, half_life) in self
+            .tissue
+            .p_he()
+            .iter_mut()
+            .zip(self.tissue_constants.n2_hl().iter())
+        {
             let pio =
                 segment.start_depth().compensated_pressure(environment) * Pressure(gas.fr_he());
-
             let r = (rate.0 as f64 / 10.0) * gas.fr_he();
-            let k = LN_2 / self.tissue_constants.he_hl()[idx];
+            let k = LN_2 / half_life;
 
-            *val = ZHL16::depth_change_loading(time_fr, po, pio, r, k);
+            *pressure = ZHL16::depth_change_loading(time_fr, *pressure, pio, r, k);
         }
 
         self.diver_depth = segment.end_depth();
@@ -90,10 +94,7 @@ impl ZHL16 {
     }
 
     fn set_first_deco_depth(&mut self, depth: Depth) {
-        match self.first_deco_depth {
-            None => self.first_deco_depth = Some(depth),
-            Some(_) => {}
-        }
+        self.first_deco_depth = self.first_deco_depth.or(Some(depth));
     }
 }
 
