@@ -4,7 +4,7 @@ use crate::units::rate::Rate;
 use thiserror::Error;
 use time::Duration;
 
-#[derive(Copy, Clone, Debug, Error, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Error, Eq, PartialEq, Hash)]
 pub enum DiveSegmentError {
     #[error("segment type inconsistent with start/end depth")]
     InconsistentDepth,
@@ -18,6 +18,7 @@ pub enum SegmentType {
     AscDesc,
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Segment {
     segment_type: SegmentType,
     start_depth: Depth,
