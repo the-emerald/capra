@@ -1,10 +1,11 @@
 use crate::environment::Environment;
 use crate::units::depth::Depth;
 use crate::units::pressure::Pressure;
+use thiserror::Error;
 
-// TODO: Gas error types
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug, Error, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum GasError {
+    #[error("gas fractions do not add up to 100")]
     FractionError,
 }
 

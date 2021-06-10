@@ -19,6 +19,7 @@ path = "src/lib.rs"
 time = { version = "^0.2.16"}
 serde = { version = "^1.0.114", optional = true}
 itertools = "^0.10.1"
+thiserror = "^1.0.25"
 
 [features]
 use-serde = ["serde/derive"]

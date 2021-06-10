@@ -1,11 +1,13 @@
-use crate::segment::DiveSegmentError::IncorrectSegmentType;
+use crate::segment::DiveSegmentError::InconsistentDepth;
 use crate::units::depth::Depth;
 use crate::units::rate::Rate;
+use thiserror::Error;
 use time::Duration;
 
-// TODO: Segment error
+#[derive(Copy, Clone, Debug, Error, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum DiveSegmentError {
-    IncorrectSegmentType,
+    #[error("segment type inconsistent with start/end depth")]
+    InconsistentDepth,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -35,9 +37,9 @@ impl Segment {
         descent_rate: Rate,
     ) -> Result<Self, DiveSegmentError> {
         match (segment_type, start_depth == end_depth) {
-            (SegmentType::AscDesc, true) => return Err(IncorrectSegmentType),
+            (SegmentType::AscDesc, true) => return Err(InconsistentDepth),
             (SegmentType::AscDesc, false) => {}
-            (_, false) => return Err(IncorrectSegmentType),
+            (_, false) => return Err(InconsistentDepth),
             _ => {}
         }
 
