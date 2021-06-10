@@ -1,6 +1,6 @@
+use crate::environment::Environment;
 use crate::units::depth::Depth;
 use crate::units::pressure::Pressure;
-use crate::environment::Environment;
 
 // TODO: Gas error types
 #[derive(Debug)]
@@ -51,7 +51,13 @@ impl Gas {
         Depth(((depth.0 + 10) as f64 * (1.0 - self.fr_he()) - 10.0) as u32)
     }
 
-    pub fn ppo2_in_range(&self, depth: Depth, min: Pressure, max: Pressure, environment: Environment) -> bool {
+    pub fn ppo2_in_range(
+        &self,
+        depth: Depth,
+        min: Pressure,
+        max: Pressure,
+        environment: Environment,
+    ) -> bool {
         let ppo2 = self.pp_o2(depth, environment);
         ppo2 >= min && ppo2 <= max
     }

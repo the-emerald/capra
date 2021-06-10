@@ -1,7 +1,7 @@
+use crate::environment::Environment;
 use crate::gas::Gas;
 use crate::segment::Segment;
 use crate::units::pressure::Pressure;
-use crate::environment::Environment;
 
 pub mod zhl16;
 
