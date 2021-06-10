@@ -7,7 +7,6 @@ use crate::segment::{Segment, SegmentType};
 use crate::tissue::Tissue;
 use crate::units::depth::Depth;
 use crate::units::pressure::Pressure;
-use crate::units::water_density::WaterDensity;
 use itertools::izip;
 use std::f64::consts::{E, LN_2};
 
@@ -38,7 +37,7 @@ impl ZHL16 {
             .iter_mut()
             .zip(self.tissue_constants.n2_hl().iter())
         {
-            let pi = segment.end_depth().compensated_pressure(density) * Pressure(gas.fr_n2());
+            let pi = segment.end_depth().compensated_pressure(environment) * Pressure(gas.fr_n2());
             *pressure = ZHL16::flat_loading(
                 *pressure,
                 pi,
@@ -53,7 +52,7 @@ impl ZHL16 {
             .iter_mut()
             .zip(self.tissue_constants.he_hl().iter())
         {
-            let pi = segment.end_depth().compensated_pressure(density) * Pressure(gas.fr_n2());
+            let pi = segment.end_depth().compensated_pressure(environment) * Pressure(gas.fr_n2());
             *pressure = ZHL16::flat_loading(
                 *pressure,
                 pi,
