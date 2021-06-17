@@ -3,6 +3,8 @@ use crate::segment::Segment;
 use crate::tissue::Tissue;
 use std::collections::HashSet;
 
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PlanResult {
     end_tissue: Tissue,
     segments: Vec<(Segment, Gas)>,

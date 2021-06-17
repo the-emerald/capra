@@ -2,6 +2,8 @@ use crate::environment::Environment;
 use crate::units::air_consumption::AirConsumption;
 use crate::units::rate::Rate;
 
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Parameters {
     ascent_rate: Rate,
     descent_rate: Rate,

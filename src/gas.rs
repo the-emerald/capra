@@ -10,6 +10,7 @@ pub enum GasError {
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Gas {
     o2: u32,
     he: u32,

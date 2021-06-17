@@ -14,6 +14,7 @@ pub const PPO2_MAXIMUM_DECO: Pressure = Pressure(1.6);
 pub const WATER_VAPOUR_PRESSURE: Pressure = Pressure(0.06257);
 
 #[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Pressure(pub f64);
 
 impl Pressure {

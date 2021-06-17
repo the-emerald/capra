@@ -3,6 +3,7 @@ use crate::units::pressure::{Pressure, WATER_VAPOUR_PRESSURE};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Copy, Clone, Debug, Default, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Depth(pub u32);
 
 impl Depth {

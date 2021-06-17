@@ -19,6 +19,7 @@ pub mod tissue_constants;
 pub mod variant;
 
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZHL16 {
     /// Current tissue model of the diver.
     tissue: Tissue,

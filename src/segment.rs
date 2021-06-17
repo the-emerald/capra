@@ -11,6 +11,7 @@ pub enum DiveSegmentError {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SegmentType {
     NoDeco,
     DecoStop,
@@ -19,6 +20,7 @@ pub enum SegmentType {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Segment {
     segment_type: SegmentType,
     start_depth: Depth,

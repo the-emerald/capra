@@ -15,6 +15,8 @@ use std::collections::HashSet;
 use std::iter;
 use time::Duration;
 
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct OpenCircuit<T>
 where
     T: DecoAlgorithm + Clone,

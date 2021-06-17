@@ -74,6 +74,7 @@ pub const ZHL16C_HE_B: [f64; 16] = [
 ];
 
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TissueConstants {
     n2_a: [f64; TISSUE_COUNT],
     n2_b: [f64; TISSUE_COUNT],

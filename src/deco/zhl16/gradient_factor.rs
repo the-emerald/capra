@@ -1,4 +1,5 @@
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GradientFactor {
     low: u8,
     high: u8,

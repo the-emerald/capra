@@ -5,6 +5,7 @@ use crate::deco::zhl16::ZHL16;
 use crate::tissue::Tissue;
 use crate::units::depth::Depth;
 
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ZHL16Builder {
     tissue: Option<Tissue>,
     diver_depth: Depth,

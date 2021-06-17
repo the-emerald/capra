@@ -3,6 +3,7 @@ use crate::gas::Gas;
 use crate::units::pressure::{Pressure, WATER_VAPOUR_PRESSURE};
 
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Tissue {
     p_n2: [Pressure; TISSUE_COUNT],
     p_he: [Pressure; TISSUE_COUNT],

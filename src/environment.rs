@@ -2,6 +2,7 @@ use crate::units::altitude::Altitude;
 use crate::units::water_density::WaterDensity;
 
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Environment {
     water_density: WaterDensity,
     altitude: Altitude,
