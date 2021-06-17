@@ -1,3 +1,4 @@
+pub mod air_consumption;
 pub mod altitude;
 pub mod depth;
 pub mod pressure;

@@ -7,8 +7,11 @@ use crate::segment::{Segment, SegmentType};
 use crate::tissue::Tissue;
 use crate::units::depth::Depth;
 use crate::units::pressure::Pressure;
+use crate::units::rate::Rate;
+use crate::util::time_taken;
 use itertools::izip;
 use std::f64::consts::{E, LN_2};
+use time::Duration;
 
 pub mod builder;
 pub mod gradient_factor;
@@ -127,7 +130,7 @@ impl ZHL16 {
         )
     }
 
-    fn set_first_deco_depth(&mut self, depth: Depth) {
+    fn update_first_deco_depth(&mut self, depth: Depth) {
         self.first_deco_depth = self.first_deco_depth.or(Some(depth));
     }
 
@@ -155,31 +158,10 @@ impl ZHL16 {
     fn tissue_ceiling(gf: f64, p_n2: Pressure, p_he: Pressure, a: f64, b: f64) -> Pressure {
         Pressure(((p_n2 + p_he).0 - (a * gf)) / (gf / b + 1.0 - gf))
     }
-}
 
-impl DecoAlgorithm for ZHL16 {
-    fn add_segment(mut self, segment: &Segment, gas: &Gas, environment: Environment) -> Self {
-        match segment.segment_type() {
-            SegmentType::NoDeco => panic!("no-deco segment applied to deco algorithm"),
-            SegmentType::DecoStop => {
-                self.add_flat_segment_inner(segment, gas, environment);
-                self.set_first_deco_depth(segment.start_depth());
-            }
-            SegmentType::Bottom => {
-                self.add_flat_segment_inner(segment, gas, environment);
-            }
-            SegmentType::AscDesc => {
-                self.add_depth_change_segment_inner(segment, gas, environment);
-            }
-        }
-        self.diver_depth = segment.end_depth();
-
-        self
-    }
-
-    fn ascent_ceiling(&self) -> Pressure {
+    fn ascent_ceiling(&self, fr_gf_override: Option<f64>) -> Pressure {
         let mut ceilings: [Pressure; TISSUE_COUNT] = [Pressure::default(); TISSUE_COUNT];
-        let gf = self.fr_gf_at_depth(self.diver_depth);
+        let gf = fr_gf_override.unwrap_or(self.fr_gf_at_depth(self.diver_depth));
 
         for (ceil, n2_a, he_a, n2_b, he_b, p_n2, p_he) in izip!(
             &mut ceilings,
@@ -199,5 +181,175 @@ impl DecoAlgorithm for ZHL16 {
             .iter()
             .min_by(|&&a, &b| a.partial_cmp(b).unwrap())
             .unwrap()
+    }
+
+    fn find_next_stop(
+        &self,
+        ascent_rate: Rate,
+        descent_rate: Rate,
+        gas: &Gas,
+        environment: Environment,
+    ) -> Segment {
+        let next_stop_depth = Depth(
+            (3.0 * ((self.ascent_ceiling(None).equivalent_depth(environment).0 as f64 / 3.0)
+                .ceil())) as u32,
+        );
+        let mut stop_time = Duration::zero();
+
+        loop {
+            let mut virtual_model = self.clone();
+            // If diver is not at the next stop depth, ascend the diver there.
+            if virtual_model.diver_depth != next_stop_depth {
+                virtual_model.add_segment(
+                    &Segment::new(
+                        SegmentType::AscDesc,
+                        virtual_model.diver_depth,
+                        next_stop_depth,
+                        time_taken(ascent_rate, virtual_model.diver_depth, next_stop_depth),
+                        ascent_rate,
+                        descent_rate,
+                    )
+                    .unwrap(),
+                    gas,
+                    environment,
+                );
+            }
+
+            // Try the current stop time
+            let segment = Segment::new(
+                SegmentType::DecoStop,
+                next_stop_depth,
+                next_stop_depth,
+                stop_time,
+                ascent_rate,
+                descent_rate,
+            )
+            .unwrap();
+
+            virtual_model = virtual_model.add_segment(&segment, gas, environment);
+            virtual_model.update_first_deco_depth(next_stop_depth);
+
+            // Break if cleared to proceed to the next stop
+            if virtual_model.ascent_ceiling(None)
+                < next_stop_depth.pressure(environment) - Depth(3).pressure(environment)
+                    + Pressure(1.0)
+            {
+                break segment;
+            } else {
+                stop_time += Duration::minute()
+            }
+        }
+    }
+
+    fn find_ndl(&self, gas: &Gas, environment: Environment) -> Option<Duration> {
+        let mut ndl_duration = Duration::zero();
+        loop {
+            let mut virtual_deco = self.clone();
+            let segment = Segment::new(
+                SegmentType::Bottom,
+                virtual_deco.diver_depth,
+                virtual_deco.diver_depth,
+                ndl_duration,
+                Rate::default(),
+                Rate::default(),
+            )
+            .unwrap();
+
+            virtual_deco = virtual_deco.add_segment(&segment, gas, environment);
+            if virtual_deco.ascent_ceiling(Some(self.gf.fr_high())) > Pressure(1.0) {
+                if ndl_duration == Duration::zero() {
+                    // No NDL
+                    break None;
+                } else {
+                    // Return actual value
+                    break Some(ndl_duration);
+                }
+            } else {
+                if ndl_duration > Duration::minutes(999) {
+                    // Return oversized value
+                    break Some(Duration::minutes(i64::MAX));
+                }
+
+                ndl_duration += Duration::minute();
+            }
+        }
+    }
+}
+
+impl DecoAlgorithm for ZHL16 {
+    fn add_segment(mut self, segment: &Segment, gas: &Gas, environment: Environment) -> Self {
+        match segment.segment_type() {
+            SegmentType::NoDeco => panic!("no-deco segment applied to deco algorithm"),
+            SegmentType::DecoStop => {
+                self.add_flat_segment_inner(segment, gas, environment);
+                self.update_first_deco_depth(segment.start_depth());
+            }
+            SegmentType::Bottom => {
+                self.add_flat_segment_inner(segment, gas, environment);
+            }
+            SegmentType::AscDesc => {
+                self.add_depth_change_segment_inner(segment, gas, environment);
+            }
+        }
+        self.diver_depth = segment.end_depth();
+
+        self
+    }
+
+    fn get_stops(
+        mut self,
+        ascent_rate: Rate,
+        descent_rate: Rate,
+        gas: &Gas,
+        environment: Environment,
+    ) -> Vec<Segment> {
+        let mut stops: Vec<Segment> = vec![];
+
+        if self.ascent_ceiling(Some(self.gf.fr_high())) < Pressure(1.0) {
+            stops.push(
+                Segment::new(
+                    SegmentType::NoDeco,
+                    self.diver_depth,
+                    self.diver_depth,
+                    self.find_ndl(gas, environment)
+                        .expect("ascent ceiling < 1.0 but no ndl"),
+                    Rate::default(),
+                    Rate::default(),
+                )
+                .unwrap(),
+            );
+            return stops;
+        }
+
+        let mut last_depth = self.diver_depth;
+        loop {
+            let stop = self.find_next_stop(ascent_rate, descent_rate, gas, environment);
+            self.update_first_deco_depth(stop.end_depth());
+
+            // Make sure no AscDesc is made if same depth, but deco necessary
+            if last_depth != stop.end_depth() {
+                let depth_change_segment = Segment::new(
+                    SegmentType::AscDesc,
+                    last_depth,
+                    stop.end_depth(),
+                    time_taken(ascent_rate, stop.end_depth(), last_depth),
+                    ascent_rate,
+                    descent_rate,
+                )
+                .unwrap();
+                self = self.add_segment(&depth_change_segment, gas, environment);
+                stops.push(depth_change_segment);
+            }
+
+            self = self.add_segment(&stop, gas, environment);
+
+            self.update_first_deco_depth(stop.end_depth());
+            last_depth = stop.end_depth();
+            stops.push(stop);
+
+            if self.ascent_ceiling(None) > Pressure(1.0) {
+                break stops;
+            }
+        }
     }
 }

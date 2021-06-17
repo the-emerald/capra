@@ -9,6 +9,7 @@ pub enum GasError {
     FractionError,
 }
 
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct Gas {
     o2: u32,
     he: u32,
