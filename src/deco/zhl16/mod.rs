@@ -161,7 +161,7 @@ impl ZHL16 {
 
     fn ascent_ceiling(&self, fr_gf_override: Option<f64>) -> Pressure {
         let mut ceilings: [Pressure; TISSUE_COUNT] = [Pressure::default(); TISSUE_COUNT];
-        let gf = fr_gf_override.unwrap_or(self.fr_gf_at_depth(self.diver_depth));
+        let gf = fr_gf_override.unwrap_or_else(|| self.fr_gf_at_depth(self.diver_depth));
 
         for (ceil, n2_a, he_a, n2_b, he_b, p_n2, p_he) in izip!(
             &mut ceilings,
@@ -197,7 +197,7 @@ impl ZHL16 {
         let mut stop_time = Duration::zero();
 
         loop {
-            let mut virtual_model = self.clone();
+            let mut virtual_model = *self;
             // If diver is not at the next stop depth, ascend the diver there.
             if virtual_model.diver_depth != next_stop_depth {
                 virtual_model.add_segment(
@@ -244,7 +244,7 @@ impl ZHL16 {
     fn find_ndl(&self, gas: &Gas, environment: Environment) -> Option<Duration> {
         let mut ndl_duration = Duration::zero();
         loop {
-            let mut virtual_deco = self.clone();
+            let mut virtual_deco = *self;
             let segment = Segment::new(
                 SegmentType::Bottom,
                 virtual_deco.diver_depth,
@@ -351,5 +351,13 @@ impl DecoAlgorithm for ZHL16 {
                 break stops;
             }
         }
+    }
+
+    fn tissue(&self) -> Tissue {
+        self.tissue
+    }
+
+    fn model_depth(&self) -> Depth {
+        self.diver_depth
     }
 }

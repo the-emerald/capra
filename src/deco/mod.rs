@@ -2,6 +2,8 @@ use crate::environment::Environment;
 use crate::gas::Gas;
 use crate::segment::Segment;
 
+use crate::tissue::Tissue;
+use crate::units::depth::Depth;
 use crate::units::rate::Rate;
 
 pub mod zhl16;
@@ -17,4 +19,6 @@ pub trait DecoAlgorithm {
         gas: &Gas,
         environment: Environment,
     ) -> Vec<Segment>;
+    fn tissue(&self) -> Tissue;
+    fn model_depth(&self) -> Depth;
 }

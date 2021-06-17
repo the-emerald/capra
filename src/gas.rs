@@ -75,4 +75,13 @@ impl Gas {
     pub fn pp_n2(&self, depth: Depth, environment: Environment) -> Pressure {
         Pressure(depth.pressure(environment).0 * self.fr_n2())
     }
+
+    pub fn max_operating_depth(
+        &self,
+        depth: Depth,
+        max_pp_o2: Pressure,
+        environment: Environment,
+    ) -> Depth {
+        ((max_pp_o2 / self.pp_o2(depth, environment)) - Pressure(1.0)).equivalent_depth(environment)
+    }
 }
