@@ -12,13 +12,13 @@ pub enum GasError {
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Gas {
-    o2: u32,
-    he: u32,
-    n2: u32,
+    o2: u8,
+    he: u8,
+    n2: u8,
 }
 
 impl Gas {
-    pub fn new(o2: u32, he: u32, n2: u32) -> Result<Self, GasError> {
+    pub fn new(o2: u8, he: u8, n2: u8) -> Result<Self, GasError> {
         if o2 + he + n2 != 100 {
             Err(GasError::FractionError)
         } else {
@@ -38,15 +38,15 @@ impl Gas {
         self.he as f64 / 100.0
     }
 
-    pub fn o2(&self) -> u32 {
+    pub fn o2(&self) -> u8 {
         self.o2
     }
 
-    pub fn n2(&self) -> u32 {
+    pub fn n2(&self) -> u8 {
         self.n2
     }
 
-    pub fn he(&self) -> u32 {
+    pub fn he(&self) -> u8 {
         self.he
     }
 

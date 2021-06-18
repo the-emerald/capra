@@ -13,6 +13,24 @@ pub struct Parameters {
 }
 
 impl Parameters {
+    pub fn new(
+        ascent_rate: Rate,
+        descent_rate: Rate,
+        environment: Environment,
+        sac_bottom: AirConsumption,
+        sac_deco: AirConsumption,
+    ) -> Self {
+        Parameters {
+            ascent_rate,
+            descent_rate,
+            environment,
+            sac_bottom,
+            sac_deco,
+        }
+    }
+}
+
+impl Parameters {
     pub fn ascent_rate(&self) -> Rate {
         self.ascent_rate
     }

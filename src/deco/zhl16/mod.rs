@@ -56,7 +56,7 @@ impl ZHL16 {
             .iter_mut()
             .zip(self.tissue_constants.he_hl().iter())
         {
-            let pi = segment.end_depth().compensated_pressure(environment) * Pressure(gas.fr_n2());
+            let pi = segment.end_depth().compensated_pressure(environment) * Pressure(gas.fr_he());
             *pressure = ZHL16::flat_loading(
                 *pressure,
                 pi,
@@ -105,7 +105,7 @@ impl ZHL16 {
             .tissue
             .p_he_mut()
             .iter_mut()
-            .zip(self.tissue_constants.n2_hl().iter())
+            .zip(self.tissue_constants.he_hl().iter())
         {
             let pio =
                 segment.start_depth().compensated_pressure(environment) * Pressure(gas.fr_he());
@@ -180,7 +180,7 @@ impl ZHL16 {
 
         *ceilings
             .iter()
-            .min_by(|&&a, &b| a.partial_cmp(b).unwrap())
+            .max_by(|&&a, &b| a.partial_cmp(b).unwrap())
             .unwrap()
     }
 
@@ -268,7 +268,7 @@ impl ZHL16 {
             } else {
                 if ndl_duration > Duration::minutes(999) {
                     // Return oversized value
-                    break Some(Duration::minutes(i64::MAX));
+                    break Some(Duration::minutes(999));
                 }
 
                 ndl_duration += Duration::minute();
