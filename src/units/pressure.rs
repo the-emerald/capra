@@ -11,6 +11,9 @@ pub const PPO2_MAXIMUM_DIVE: Pressure = Pressure(1.4);
 /// A default, placeholder maximum ppO2 for use during decompression stops.
 pub const PPO2_MAXIMUM_DECO: Pressure = Pressure(1.6);
 
+/// A "fudge factor" added to ppO2 limits to account for water pressure differences.
+pub const PPO2_FUDGE_FACTOR: Pressure = Pressure(0.1);
+
 pub const WATER_VAPOUR_PRESSURE: Pressure = Pressure(0.06257);
 
 #[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]

@@ -7,7 +7,7 @@ use crate::plan::DivePlan;
 use crate::segment::SegmentType::{AscDesc, DecoStop};
 use crate::segment::{Segment, SegmentType};
 use crate::units::depth::Depth;
-use crate::units::pressure::Pressure;
+use crate::units::pressure::{Pressure, PPO2_FUDGE_FACTOR, PPO2_MAXIMUM_DECO, PPO2_MAXIMUM_DIVE};
 use crate::util::time_taken;
 use itertools::Itertools;
 use std::cmp::Ordering;
@@ -49,6 +49,7 @@ where
         segments: &[Segment],
         current_gas: &Gas,
         available_gases: &HashSet<(Gas, Option<Depth>)>,
+        max_pp_o2: Pressure,
         environment: Environment,
     ) -> Option<(Segment, Gas)> {
         for stop in segments
@@ -64,7 +65,7 @@ where
                         depth.unwrap_or_else(|| {
                             gas.max_operating_depth(
                                 stop.start_depth(),
-                                Pressure(1.601),
+                                max_pp_o2 + PPO2_FUDGE_FACTOR,
                                 environment,
                             )
                         }),
@@ -162,6 +163,7 @@ where
             &stops,
             &start.1,
             &available_gases,
+            end.map(|_| PPO2_MAXIMUM_DECO).unwrap_or(PPO2_MAXIMUM_DIVE),
             self.parameters.environment(),
         );
 
