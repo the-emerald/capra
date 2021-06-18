@@ -24,6 +24,10 @@ impl Pressure {
     pub fn equivalent_depth(&self, environment: Environment) -> Depth {
         Depth(((self.0 - 1.0) * environment.water_density().meters_per_bar()) as u32)
     }
+
+    pub fn precise_equivalent_depth(&self, environment: Environment) -> f64 {
+        (self.0 - 1.0) * environment.water_density().meters_per_bar()
+    }
 }
 
 impl Add for Pressure {

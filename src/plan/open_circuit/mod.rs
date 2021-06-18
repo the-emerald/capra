@@ -121,6 +121,11 @@ where
                     )
                     .unwrap();
                     // Add to model
+                    running_model = running_model.add_segment(
+                        &descent,
+                        &start.1,
+                        self.parameters.environment(),
+                    );
                     stops_performed.push((descent, start.1));
                     return running_model.add_segment(
                         &descent,
@@ -235,7 +240,7 @@ where
                 start_depth,
                 end_depth,
                 time_taken(
-                    if start_depth > end_depth {
+                    if start_depth < end_depth {
                         self.parameters.descent_rate()
                     } else {
                         self.parameters.ascent_rate()

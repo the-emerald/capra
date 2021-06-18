@@ -76,8 +76,7 @@ impl ZHL16 {
         gas: &Gas,
         environment: Environment,
     ) {
-        let delta = segment.end_depth().delta(segment.start_depth());
-        let rate = if delta > Depth(0) {
+        let rate = if segment.start_depth() < segment.end_depth() {
             segment.descent_rate()
         } else {
             segment.ascent_rate()
@@ -162,7 +161,11 @@ impl ZHL16 {
 
     fn ascent_ceiling(&self, fr_gf_override: Option<f64>) -> Pressure {
         let mut ceilings: [Pressure; TISSUE_COUNT] = [Pressure::default(); TISSUE_COUNT];
-        let gf = fr_gf_override.unwrap_or_else(|| self.fr_gf_at_depth(self.diver_depth));
+        let gf = fr_gf_override.unwrap_or_else(|| {
+            self.first_deco_depth
+                .map(|_| self.fr_gf_at_depth(self.diver_depth))
+                .unwrap_or_else(|| self.gf.fr_low())
+        });
 
         for (ceil, n2_a, he_a, n2_b, he_b, p_n2, p_he) in izip!(
             &mut ceilings,
@@ -190,53 +193,52 @@ impl ZHL16 {
         descent_rate: Rate,
         gas: &Gas,
         environment: Environment,
-    ) -> Segment {
-        let next_stop_depth = Depth(
+    ) -> (Option<Segment>, Segment) {
+        let stop_depth = Depth(
             (3.0 * ((self.ascent_ceiling(None).equivalent_depth(environment).0 as f64 / 3.0)
                 .ceil())) as u32,
         );
         let mut stop_time = Duration::zero();
 
         loop {
+            let mut asc_segment = None;
             let mut virtual_model = *self;
             // If diver is not at the next stop depth, ascend the diver there.
-            if virtual_model.diver_depth != next_stop_depth {
-                virtual_model.add_segment(
-                    &Segment::new(
-                        SegmentType::AscDesc,
-                        virtual_model.diver_depth,
-                        next_stop_depth,
-                        time_taken(ascent_rate, virtual_model.diver_depth, next_stop_depth),
-                        ascent_rate,
-                        descent_rate,
-                    )
-                    .unwrap(),
-                    gas,
-                    environment,
-                );
+            if virtual_model.diver_depth != stop_depth {
+                let segment = Segment::new(
+                    SegmentType::AscDesc,
+                    virtual_model.diver_depth,
+                    stop_depth,
+                    time_taken(ascent_rate, virtual_model.diver_depth, stop_depth),
+                    ascent_rate,
+                    descent_rate,
+                )
+                .unwrap();
+                virtual_model = virtual_model.add_segment(&segment, gas, environment);
+                asc_segment = Some(segment);
             }
 
             // Try the current stop time
-            let segment = Segment::new(
+            let deco_segment = Segment::new(
                 SegmentType::DecoStop,
-                next_stop_depth,
-                next_stop_depth,
+                stop_depth,
+                stop_depth,
                 stop_time,
                 ascent_rate,
                 descent_rate,
             )
             .unwrap();
 
-            virtual_model = virtual_model.add_segment(&segment, gas, environment);
-            virtual_model.update_first_deco_depth(next_stop_depth);
+            virtual_model = virtual_model.add_segment(&deco_segment, gas, environment);
+            virtual_model.update_first_deco_depth(stop_depth);
 
             // Break if cleared to proceed to the next stop
             if virtual_model.ascent_ceiling(None)
-                < next_stop_depth.pressure(environment) - Depth(3).pressure(environment)
-                    + Pressure(1.0)
+                < stop_depth.pressure(environment) - Depth(3).pressure(environment) + Pressure(1.0)
             {
-                break segment;
+                break (asc_segment, deco_segment);
             } else {
+                // println!("One more minute {}", stop_depth.0);
                 stop_time += Duration::minute()
             }
         }
@@ -322,33 +324,23 @@ impl DecoAlgorithm for ZHL16 {
             return stops;
         }
 
-        let mut last_depth = self.diver_depth;
         loop {
-            let stop = self.find_next_stop(ascent_rate, descent_rate, gas, environment);
+            let (asc_to_stop, stop) =
+                self.find_next_stop(ascent_rate, descent_rate, gas, environment);
+
             self.update_first_deco_depth(stop.end_depth());
 
             // Make sure no AscDesc is made if same depth, but deco necessary
-            if last_depth != stop.end_depth() {
-                let depth_change_segment = Segment::new(
-                    SegmentType::AscDesc,
-                    last_depth,
-                    stop.end_depth(),
-                    time_taken(ascent_rate, stop.end_depth(), last_depth),
-                    ascent_rate,
-                    descent_rate,
-                )
-                .unwrap();
-                self = self.add_segment(&depth_change_segment, gas, environment);
-                stops.push(depth_change_segment);
+            if let Some(asc_to_stop) = asc_to_stop {
+                self = self.add_segment(&asc_to_stop, gas, environment);
+                stops.push(asc_to_stop);
             }
 
             self = self.add_segment(&stop, gas, environment);
-
-            self.update_first_deco_depth(stop.end_depth());
-            last_depth = stop.end_depth();
             stops.push(stop);
 
-            if self.ascent_ceiling(None) > Pressure(1.0) {
+            if self.ascent_ceiling(None) < Pressure(1.0) {
+                println!("{:?}", &stops);
                 break stops;
             }
         }
