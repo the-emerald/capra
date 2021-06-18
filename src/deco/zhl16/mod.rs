@@ -181,10 +181,11 @@ impl ZHL16 {
             *ceil = ZHL16::tissue_ceiling(gf, *p_n2, *p_he, a, b);
         }
 
-        *ceilings
-            .iter()
-            .max_by(|&&a, &b| a.partial_cmp(b).unwrap())
-            .unwrap()
+        // *ceilings
+        //     .iter()
+        //     .max_by(|&&a, &b| a.partial_cmp(b).unwrap())
+        //     .unwrap()
+        Pressure(ceilings.iter().fold(f64::NAN, |prev, &cur| prev.max(cur.0)))
     }
 
     fn find_next_stop(
@@ -241,7 +242,6 @@ impl ZHL16 {
             {
                 break (asc_segment, deco_segment);
             } else {
-                // println!("One more minute {}", stop_depth.0);
                 stop_time += Duration::minute()
             }
         }
@@ -343,7 +343,6 @@ impl DecoAlgorithm for ZHL16 {
             stops.push(stop);
 
             if self.ascent_ceiling(None) < Pressure(1.0) {
-                println!("{:?}", &stops);
                 break stops;
             }
         }

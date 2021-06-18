@@ -63,16 +63,12 @@ where
                     (
                         gas,
                         depth.unwrap_or_else(|| {
-                            gas.max_operating_depth(
-                                stop.start_depth(),
-                                max_pp_o2 + PPO2_FUDGE_FACTOR,
-                                environment,
-                            )
+                            gas.max_operating_depth(max_pp_o2 + PPO2_FUDGE_FACTOR, environment)
                         }),
                     )
                 })
                 // Remove gases with too high MOD
-                .filter(|(_, depth)| depth <= &stop.start_depth())
+                .filter(|(_, depth)| depth >= &stop.start_depth())
                 // Remove gases with too high END
                 .filter(|(gas, _)| {
                     gas.equivalent_narcotic_depth(stop.start_depth()) <= stop.start_depth()
@@ -168,7 +164,7 @@ where
             &stops,
             &start.1,
             &available_gases,
-            end.map(|_| PPO2_MAXIMUM_DECO).unwrap_or(PPO2_MAXIMUM_DIVE),
+            end.map(|_| PPO2_MAXIMUM_DIVE).unwrap_or(PPO2_MAXIMUM_DECO),
             self.parameters.environment(),
         );
 
