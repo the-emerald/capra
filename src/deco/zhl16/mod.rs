@@ -195,10 +195,13 @@ impl ZHL16 {
         environment: Environment,
     ) -> (Option<Segment>, Segment) {
         let stop_depth = Depth(
-            (3.0 * ((self.ascent_ceiling(None).equivalent_depth(environment).0 as f64 / 3.0)
-                .ceil())) as u32,
+            (3.0 * (self
+                .ascent_ceiling(None)
+                .precise_equivalent_depth(environment)
+                / 3.0)
+                .ceil()) as u32,
         );
-        let mut stop_time = Duration::zero();
+        let mut stop_time = Duration::minute();
 
         loop {
             let mut asc_segment = None;
