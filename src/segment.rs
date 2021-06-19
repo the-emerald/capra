@@ -1,4 +1,7 @@
+use crate::environment::Environment;
 use crate::segment::DiveSegmentError::InconsistentDepth;
+use crate::units::consumption::GasConsumption;
+use crate::units::consumption_rate::GasConsumptionRate;
 use crate::units::depth::Depth;
 use crate::units::rate::Rate;
 use thiserror::Error;
@@ -78,5 +81,21 @@ impl Segment {
 
     pub fn descent_rate(&self) -> Rate {
         self.descent_rate
+    }
+
+    pub fn gas_consumed(
+        &self,
+        consumption_rate: GasConsumptionRate,
+        environment: Environment,
+    ) -> GasConsumption {
+        let pressure = match self.segment_type {
+            SegmentType::AscDesc => {
+                ((self.start_depth + self.end_depth) / Depth(2)).pressure(environment)
+            }
+            _ => self.end_depth.pressure(environment),
+        };
+        GasConsumption(
+            (pressure.0 * (self.time.as_seconds_f64() / 60.0) * consumption_rate.0 as f64) as u32,
+        )
     }
 }

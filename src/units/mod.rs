@@ -1,5 +1,6 @@
-pub mod air_consumption;
 pub mod altitude;
+pub mod consumption;
+pub mod consumption_rate;
 pub mod depth;
 pub mod pressure;
 pub mod rate;

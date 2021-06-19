@@ -1,5 +1,5 @@
 use crate::environment::Environment;
-use crate::units::air_consumption::AirConsumption;
+use crate::units::consumption_rate::GasConsumptionRate;
 use crate::units::rate::Rate;
 
 #[derive(Copy, Clone, Debug)]
@@ -8,8 +8,8 @@ pub struct Parameters {
     ascent_rate: Rate,
     descent_rate: Rate,
     environment: Environment,
-    sac_bottom: AirConsumption,
-    sac_deco: AirConsumption,
+    sac_bottom: GasConsumptionRate,
+    sac_deco: GasConsumptionRate,
 }
 
 impl Parameters {
@@ -17,8 +17,8 @@ impl Parameters {
         ascent_rate: Rate,
         descent_rate: Rate,
         environment: Environment,
-        sac_bottom: AirConsumption,
-        sac_deco: AirConsumption,
+        sac_bottom: GasConsumptionRate,
+        sac_deco: GasConsumptionRate,
     ) -> Self {
         Parameters {
             ascent_rate,
@@ -40,10 +40,10 @@ impl Parameters {
     pub fn environment(&self) -> Environment {
         self.environment
     }
-    pub fn sac_bottom(&self) -> AirConsumption {
+    pub fn sac_bottom(&self) -> GasConsumptionRate {
         self.sac_bottom
     }
-    pub fn sac_deco(&self) -> AirConsumption {
+    pub fn sac_deco(&self) -> GasConsumptionRate {
         self.sac_deco
     }
 }

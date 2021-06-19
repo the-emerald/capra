@@ -6,12 +6,13 @@ use crate::plan::plan_result::PlanResult;
 use crate::plan::DivePlan;
 use crate::segment::SegmentType::{AscDesc, DecoStop};
 use crate::segment::{Segment, SegmentType};
+use crate::units::consumption::GasConsumption;
 use crate::units::depth::Depth;
 use crate::units::pressure::{Pressure, PPO2_FUDGE_FACTOR, PPO2_MAXIMUM_DECO, PPO2_MAXIMUM_DIVE};
 use crate::util::time_taken;
 use itertools::Itertools;
 use std::cmp::Ordering;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::iter;
 use time::Duration;
 
@@ -283,6 +284,18 @@ where
         self.deco = self.level_to_level(self.deco.clone(), &final_stop, None, &mut stops_performed);
         segments.append(&mut stops_performed);
 
-        PlanResult::new(self.deco.tissue(), &segments, &[])
+        let mut gas_plan = HashMap::new();
+        for (segment, gas) in &segments {
+            *gas_plan.entry(*gas).or_default() += match segment.segment_type() {
+                SegmentType::NoDeco => GasConsumption(0),
+                SegmentType::DecoStop => {
+                    segment.gas_consumed(self.parameters.sac_deco(), self.parameters.environment())
+                }
+                _ => segment
+                    .gas_consumed(self.parameters.sac_bottom(), self.parameters.environment()),
+            };
+        }
+
+        PlanResult::new(self.deco.tissue(), &segments, &gas_plan)
     }
 }
