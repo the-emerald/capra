@@ -181,10 +181,6 @@ impl ZHL16 {
             *ceil = ZHL16::tissue_ceiling(gf, *p_n2, *p_he, a, b);
         }
 
-        // *ceilings
-        //     .iter()
-        //     .max_by(|&&a, &b| a.partial_cmp(b).unwrap())
-        //     .unwrap()
         Pressure(ceilings.iter().fold(f64::NAN, |prev, &cur| prev.max(cur.0)))
     }
 
