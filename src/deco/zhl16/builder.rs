@@ -79,7 +79,7 @@ impl ZHL16Builder {
             diver_depth: self.diver_depth,
             first_deco_depth: self.first_deco_depth,
             gf: self.gradient_factor,
-            deco_increment: self.deco_increment
+            deco_increment: self.deco_increment,
         }
     }
 }
