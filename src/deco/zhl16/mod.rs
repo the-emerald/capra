@@ -272,10 +272,8 @@ impl ZHL16 {
                 }
             } else {
                 if ndl_duration > Duration::minutes(999) {
-                    // Return oversized value
                     break Some(Duration::minutes(999));
                 }
-
                 ndl_duration += Duration::minute();
             }
         }
