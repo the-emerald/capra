@@ -124,11 +124,7 @@ where
                         self.parameters.environment(),
                     );
                     stops_performed.push((descent, start.1));
-                    return running_model.add_segment(
-                        &descent,
-                        &start.1,
-                        self.parameters.environment(),
-                    );
+                    return running_model;
                 }
                 Ordering::Equal => {
                     // If both are equal then no segments to add.
