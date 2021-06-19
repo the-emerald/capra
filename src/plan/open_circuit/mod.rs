@@ -221,7 +221,7 @@ impl<T> DivePlan for OpenCircuit<T>
 where
     T: DecoAlgorithm + Clone,
 {
-    fn plan(mut self) -> PlanResult {
+    fn get_plan(mut self) -> PlanResult {
         let mut segments: Vec<(Segment, Gas)> = Vec::new();
 
         // Adjust diver depth to beginning of segments

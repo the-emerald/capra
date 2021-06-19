@@ -4,6 +4,5 @@ pub mod open_circuit;
 pub mod plan_result;
 
 pub trait DivePlan {
-    fn plan(self) -> PlanResult;
-    // TODO: Plan with tanks
+    fn get_plan(self) -> PlanResult;
 }
