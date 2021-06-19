@@ -95,23 +95,23 @@ where
     fn level_to_level(
         &self,
         mut running_model: T,
-        start: &(Segment, Gas),
+        (start_segment, start_gas): &(Segment, Gas),
         end: Option<&(Segment, Gas)>,
         stops_performed: &mut Vec<(Segment, Gas)>,
     ) -> T {
         // If end segment is defined, check if there is a depth change
-        if let Some(end) = end {
-            match start.0.end_depth().cmp(&end.0.start_depth()) {
+        if let Some((end_segment, _)) = end {
+            match start_segment.end_depth().cmp(&end_segment.start_depth()) {
                 Ordering::Less => {
                     // Descend to link up start <-> end
                     let descent = Segment::new(
                         SegmentType::AscDesc,
-                        start.0.end_depth(),
-                        end.0.start_depth(),
+                        start_segment.end_depth(),
+                        end_segment.start_depth(),
                         time_taken(
                             self.parameters.descent_rate(),
-                            start.0.end_depth(),
-                            end.0.start_depth(),
+                            start_segment.end_depth(),
+                            end_segment.start_depth(),
                         ),
                         self.parameters.ascent_rate(),
                         self.parameters.descent_rate(),
@@ -120,10 +120,10 @@ where
                     // Add to model
                     running_model = running_model.add_segment(
                         &descent,
-                        &start.1,
+                        &start_gas,
                         self.parameters.environment(),
                     );
-                    stops_performed.push((descent, start.1));
+                    stops_performed.push((descent, *start_gas));
                     return running_model;
                 }
                 Ordering::Equal => {
@@ -144,7 +144,7 @@ where
             .get_stops(
                 self.parameters.ascent_rate(),
                 self.parameters.descent_rate(),
-                &start.1,
+                &start_gas,
                 self.parameters.environment(),
             )
             .into_iter()
@@ -153,13 +153,13 @@ where
 
         // Only use deco gases using the surfacing stops (not for between-levels)
         let available_gases = end
-            .map(|(_, gas)| vec![(start.1, None), (*gas, None)].into_iter().collect())
+            .map(|(_, gas)| vec![(*start_gas, None), (*gas, None)].into_iter().collect())
             .unwrap_or_else(|| self.deco_gases.clone());
 
         // Determine a switch-point
         let switch_point = OpenCircuit::<T>::find_gas_switch_point(
             &stops,
-            &start.1,
+            &start_gas,
             &available_gases,
             end.map(|_| PPO2_MAXIMUM_DIVE).unwrap_or(PPO2_MAXIMUM_DECO),
             self.parameters.environment(),
@@ -175,8 +175,8 @@ where
                 .take_while(|stop| stop.start_depth() > switch_point.start_depth())
             {
                 running_model =
-                    running_model.add_segment(&stop, &start.1, self.parameters.environment());
-                stops_performed.push((*stop, start.1));
+                    running_model.add_segment(&stop, &start_gas, self.parameters.environment());
+                stops_performed.push((*stop, *start_gas));
             }
 
             // At the gas switch point, use new gas to calculate new deco schedule
@@ -211,7 +211,7 @@ where
             self.level_to_level(running_model, &(new_stop, switch_gas), end, stops_performed)
         } else {
             // Push segments and return
-            stops_performed.append(&mut stops.into_iter().zip(iter::repeat(start.1)).collect());
+            stops_performed.append(&mut stops.into_iter().zip(iter::repeat(*start_gas)).collect());
             running_model
         }
     }
