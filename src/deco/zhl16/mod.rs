@@ -31,6 +31,8 @@ pub struct ZHL16 {
     first_deco_depth: Option<Depth>,
     /// GF value
     gf: GradientFactor,
+    /// Minimum increment for deco stops
+    deco_increment: Duration,
 }
 
 impl ZHL16 {
@@ -45,7 +47,7 @@ impl ZHL16 {
             *pressure = ZHL16::flat_loading(
                 *pressure,
                 pi,
-                segment.time().whole_minutes() as f64,
+                segment.time().whole_seconds() as f64 / 60.0,
                 *half_life,
             );
         }
@@ -60,7 +62,7 @@ impl ZHL16 {
             *pressure = ZHL16::flat_loading(
                 *pressure,
                 pi,
-                segment.time().whole_minutes() as f64,
+                segment.time().whole_seconds() as f64 / 60.0,
                 *half_life,
             );
         }
@@ -198,7 +200,7 @@ impl ZHL16 {
                 / 3.0)
                 .ceil()) as u32,
         );
-        let mut stop_time = Duration::minute();
+        let mut stop_time = self.deco_increment;
 
         loop {
             let mut asc_segment = None;
@@ -238,7 +240,7 @@ impl ZHL16 {
             {
                 break (asc_segment, deco_segment);
             } else {
-                stop_time += Duration::minute()
+                stop_time += self.deco_increment
             }
         }
     }
