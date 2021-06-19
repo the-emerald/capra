@@ -22,7 +22,10 @@ pub struct Pressure(pub f64);
 
 impl Pressure {
     pub fn equivalent_depth(&self, environment: Environment) -> Depth {
-        Depth(((self.0 - 1.0) * environment.water_density().meters_per_bar()) as u32)
+        Depth(
+            ((self.0 as f64 - environment.altitude().atmospheric_pressure().0)
+                * environment.water_density().meters_per_bar()) as u32,
+        )
     }
 
     pub fn precise_equivalent_depth(&self, environment: Environment) -> f64 {

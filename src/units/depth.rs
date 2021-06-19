@@ -8,8 +8,8 @@ pub struct Depth(pub u32);
 
 impl Depth {
     pub fn pressure(&self, environment: Environment) -> Pressure {
-        // TODO: Altitude
-        Pressure((self.0 as f64 / environment.water_density().meters_per_bar()) + 1.0)
+        Pressure(self.0 as f64 / environment.water_density().meters_per_bar())
+            + environment.altitude().atmospheric_pressure()
     }
 
     pub fn compensated_pressure(&self, environment: Environment) -> Pressure {

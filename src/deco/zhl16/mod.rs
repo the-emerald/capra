@@ -236,7 +236,7 @@ impl ZHL16 {
 
             // Break if cleared to proceed to the next stop
             if virtual_model.ascent_ceiling(None)
-                < stop_depth.pressure(environment) - Depth(3).pressure(environment) + Pressure(1.0)
+                < stop_depth.pressure(environment) - Depth(3).pressure(environment) + environment.altitude().atmospheric_pressure()
             {
                 break (asc_segment, deco_segment);
             } else {
@@ -260,7 +260,7 @@ impl ZHL16 {
             .unwrap();
 
             virtual_deco = virtual_deco.add_segment(&segment, gas, environment);
-            if virtual_deco.ascent_ceiling(Some(self.gf.fr_high())) > Pressure(1.0) {
+            if virtual_deco.ascent_ceiling(Some(self.gf.fr_high())) > environment.altitude().atmospheric_pressure() {
                 if ndl_duration == Duration::zero() {
                     // No NDL
                     break None;
@@ -307,7 +307,7 @@ impl DecoAlgorithm for ZHL16 {
     ) -> Vec<Segment> {
         let mut stops: Vec<Segment> = vec![];
 
-        if self.ascent_ceiling(Some(self.gf.fr_high())) < Pressure(1.0) {
+        if self.ascent_ceiling(Some(self.gf.fr_high())) < environment.altitude().atmospheric_pressure() {
             stops.push(
                 Segment::new(
                     SegmentType::NoDeco,
@@ -338,7 +338,7 @@ impl DecoAlgorithm for ZHL16 {
             self = self.add_segment(&stop, gas, environment);
             stops.push(stop);
 
-            if self.ascent_ceiling(None) < Pressure(1.0) {
+            if self.ascent_ceiling(None) < environment.altitude().atmospheric_pressure() {
                 break stops;
             }
         }

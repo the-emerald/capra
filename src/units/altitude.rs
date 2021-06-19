@@ -1,12 +1,13 @@
+use crate::units::pressure::Pressure;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Default, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Altitude(pub u32);
 
-impl Default for Altitude {
-    fn default() -> Self {
-        Self(0)
+impl Altitude {
+    pub fn atmospheric_pressure(&self) -> Pressure {
+        Pressure(101.325 * (-0.00012_f64 * self.0 as f64).exp() / 100.0)
     }
 }
 
