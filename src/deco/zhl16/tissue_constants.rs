@@ -1,3 +1,6 @@
+use crate::deco::zhl16::variant::Variant;
+use crate::deco::TISSUE_COUNT;
+
 /// N2 half-lives for the ZHL-16B deco algorithm.
 pub const ZHL16B_N2_HALFLIFE: [f64; 16] = [
     5.0, 8.0, 12.5, 18.5, 27.0, 38.3, 54.3, 77.0, 109.0, 146.0, 187.0, 239.0, 305.0, 390.0, 498.0,
@@ -69,3 +72,79 @@ pub const ZHL16C_HE_B: [f64; 16] = [
     0.4245, 0.5747, 0.6527, 0.7223, 0.7582, 0.7957, 0.8279, 0.8553, 0.8757, 0.8903, 0.8997, 0.9073,
     0.9122, 0.9171, 0.9217, 0.9267,
 ];
+
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "use-serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct TissueConstants {
+    n2_a: [f64; TISSUE_COUNT],
+    n2_b: [f64; TISSUE_COUNT],
+    n2_hl: [f64; TISSUE_COUNT],
+    he_a: [f64; TISSUE_COUNT],
+    he_b: [f64; TISSUE_COUNT],
+    he_hl: [f64; TISSUE_COUNT],
+}
+
+impl TissueConstants {
+    pub fn new(
+        n2_a: [f64; TISSUE_COUNT],
+        n2_b: [f64; TISSUE_COUNT],
+        n2_hl: [f64; TISSUE_COUNT],
+        he_a: [f64; TISSUE_COUNT],
+        he_b: [f64; TISSUE_COUNT],
+        he_hl: [f64; TISSUE_COUNT],
+    ) -> Self {
+        Self {
+            n2_a,
+            n2_b,
+            n2_hl,
+            he_a,
+            he_b,
+            he_hl,
+        }
+    }
+
+    pub fn n2_a(&self) -> [f64; 16] {
+        self.n2_a
+    }
+
+    pub fn n2_b(&self) -> [f64; 16] {
+        self.n2_b
+    }
+
+    pub fn n2_hl(&self) -> [f64; 16] {
+        self.n2_hl
+    }
+
+    pub fn he_a(&self) -> [f64; 16] {
+        self.he_a
+    }
+
+    pub fn he_b(&self) -> [f64; 16] {
+        self.he_b
+    }
+
+    pub fn he_hl(&self) -> [f64; 16] {
+        self.he_hl
+    }
+
+    pub fn new_by_variant(variant: Variant) -> Self {
+        match variant {
+            Variant::B => Self::new(
+                ZHL16B_N2_A,
+                ZHL16B_N2_B,
+                ZHL16B_N2_HALFLIFE,
+                ZHL16B_HE_A,
+                ZHL16B_HE_B,
+                ZHL16B_HE_HALFLIFE,
+            ),
+            Variant::C => Self::new(
+                ZHL16C_N2_A,
+                ZHL16C_N2_B,
+                ZHL16C_N2_HALFLIFE,
+                ZHL16C_HE_A,
+                ZHL16C_HE_B,
+                ZHL16C_HE_HALFLIFE,
+            ),
+        }
+    }
+}

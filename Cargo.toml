@@ -1,6 +1,6 @@
 [package]
 name = "capra"
-version = "0.2.2"
+version = "0.4.0"
 authors = ["Anson <git@anson-cheung.com>"]
 edition = "2018"
 license = "MIT"
@@ -16,9 +16,10 @@ name = "capra"
 path = "src/lib.rs"
 
 [dependencies]
-time = { version = "^0.2.16"}
+time = { version = "^0.2.16" }
 serde = { version = "^1.0.114", optional = true}
-capra-core = { version = "^0.3.0" }
+itertools = "^0.10.1"
+thiserror = "^1.0.25"
 
 [features]
-use-serde = ["capra-core/use-serde", "serde/derive"]
+use-serde = ["serde/derive", "time/serde"]
